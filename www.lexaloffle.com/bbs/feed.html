@@ -1,0 +1,1691 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<rss version="2.0">
+<channel>
+<title>zep [Lexaloffle Blog Feed]</title><link>https://www.lexaloffle.com/bbs/?uid=1</link>
+<item>
+            <title>PICO-8 0.2.6</title>
+            <description>
+&lt;p&gt;Hey All! PICO-8 0.2.6b is up now up on &lt;a href=&quot;https://www.lexaloffle.com/games.php?page=updates&quot;&gt;lexaloffle&lt;/a&gt;, &lt;a href=&quot;https://www.humblebundle.com/home/library&quot;&gt;Humble&lt;/a&gt;, &lt;a href=&quot;https://lexaloffle.itch.io/pico-8&quot;&gt;itch.io&lt;/a&gt;, and for &lt;a href=&quot;https://lexaloffle.com/bbs/?tid=34009&quot;&gt;PocketCHIP&lt;/a&gt; and web (&lt;a href=&quot;https://pico-8-edu.com&quot;&gt;Education Edition&lt;/a&gt;). Note: you'll need to update to 0.2.6b to play new carts and SFX snippets created in 0.2.6!&lt;/p&gt;
+&lt;h1&gt;Inverted Draw Operations&lt;/h1&gt;
+&lt;p&gt;Thanks to &lt;a href=&quot;https://www.lexaloffle.com/bbs/?uid=28958&quot;&gt; @p01&lt;/a&gt; for nudging me about this one! Filled draw operations (circfill, ovalfill, rectfill) can now be drawn inside-out: every pixel outside the area is drawn instead of every inside pixel. This can be controlled in a way similar to setting the fill pattern per draw call: first &lt;code&gt;poke(0x5f34,0x2)&lt;/code&gt; to enable inverted draws, and then set bits 0x1800 in the colour argument. Here is a snippet to blank out everything except a circle in the middle (that changes size):&lt;/p&gt;
+&lt;div&gt;
+				&lt;div class=scrollable_with_touch style=&quot;width:100%; max-width:800px; overflow:auto; margin-bottom:12px&quot;&gt;
+				&lt;table style=&quot;width:100%&quot; cellspacing=0 cellpadding=0&gt;
+				&lt;tr&gt;&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+				&lt;td background=/gfx/code_bg0.png&gt;
+				&lt;div style=&quot;font-family : courier; color: #000000; display:absolute; padding-left:10px;
+				padding-top:4px; padding-bottom:4px;
+				&quot;&gt;
+				&lt;pre&gt;poke(0x5f34,0x2)
+circfill(64,64,50+cos(t()/4)*10,0 | 0x1800)&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;img loading=&quot;lazy&quot; style=&quot;margin-bottom:16px&quot; border=0 src=&quot;/media/1/jelpi_circ_0.gif&quot; width=384 height=384 alt=&quot;&quot; /&gt;&lt;img loading=&quot;lazy&quot; style=&quot;margin-bottom:16px&quot; border=0 src=&quot;/media/1/inv_draw_circs.gif&quot; width=384 height=384 alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;And a short program that draws a tunnel:&lt;/p&gt;
+&lt;div&gt;
+				&lt;div class=scrollable_with_touch style=&quot;width:100%; max-width:800px; overflow:auto; margin-bottom:12px&quot;&gt;
+				&lt;table style=&quot;width:100%&quot; cellspacing=0 cellpadding=0&gt;
+				&lt;tr&gt;&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+				&lt;td background=/gfx/code_bg0.png&gt;
+				&lt;div style=&quot;font-family : courier; color: #000000; display:absolute; padding-left:10px;
+				padding-top:4px; padding-bottom:4px;
+				&quot;&gt;
+				&lt;pre&gt;
+function _draw()
+
+	cls()
+	poke(0x5f34,0x2)
+
+	-- hold ❎ to skip fill
+	cc = circfill
+	if (btn(❎)) cc = circ
+
+	for z=7,1,-1 do
+		local sx = cos(z/15+t()/4) * 50
+		local sy = sin(z/15+t()/4) * 50
+		cc(64+sx/z,64+sy/z,64/z, 7+z | 0x1800)
+	end
+end&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h1&gt;High Memory Video Mapping&lt;/h1&gt;
+&lt;p&gt;Before 0.2.6, display memory and spritesheets could be mapped to each other (at 0x0000, and 0x6000). They can now also be mapped to one of the four high 2k sections at 0x8000, 0xa000, 0xc000, and 0xe000, as long as they don't overlap with the map mapping which takes precedence. There is a nominal cpu cost when a mapped region changes between graphics and map, but otherwise changing mappings is &amp;quot;free&amp;quot; apart from the poke() call overhead.&lt;/p&gt;
+&lt;p&gt;This was a previously rejected wishlist feature, but due to a &lt;a href=&quot;https://www.lexaloffle.com/bbs/?pid=130832#p&quot;&gt;bug&lt;/a&gt; discovered (and rightly abused!) by &lt;a href=&quot;https://www.lexaloffle.com/bbs/?uid=25119&quot;&gt; @StinkerB06&lt;/a&gt;, it seemed proper to offer this as a substitute before that bug is &amp;quot;fixed&amp;quot; in a future version. Well played!&lt;/p&gt;
+&lt;p&gt;Here's an example of moving the spritesheet to 0x8000 so that 0x0 can be used for something else. Just a reminder of a confusing gocha: remapping the spritesheet remaps the whole memory area 0x0..0x1fff. So once @0x5f54 is set to e.g. 0x80, even memory functions like memcpy, memset that operate on 0x0..0x1fff will be operate on 0x8000..0x9fff.&lt;/p&gt;
+&lt;div&gt;
+				&lt;div class=scrollable_with_touch style=&quot;width:100%; max-width:800px; overflow:auto; margin-bottom:12px&quot;&gt;
+				&lt;table style=&quot;width:100%&quot; cellspacing=0 cellpadding=0&gt;
+				&lt;tr&gt;&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+				&lt;td background=/gfx/code_bg0.png&gt;
+				&lt;div style=&quot;font-family : courier; color: #000000; display:absolute; padding-left:10px;
+				padding-top:4px; padding-bottom:4px;
+				&quot;&gt;
+				&lt;pre&gt;-- copy spritesheet to 0x8000
+memcpy(0x8000,0x0,0x2000)
+-- clear spritesheet at 0x0 to prove it is no longer used!
+memset(0x0,0,0x2000)
+-- remap spritesheet to 0x8000
+poke(0x5f54,0x80)
+-- draw something to prove it worked
+spr(1, 50,50)&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h1&gt;Waveform Instruments&lt;/h1&gt;
+&lt;p&gt;Waveform instruments work roughly the same as SFX instruments: they each take up one SFX slot worth of data (SFX 0..7), and can be triggered from a regular SFX. But instead of treating the 64 bytes of note data as a regular SFX, they are used to represent 64 8-bit samples of a short looping waveform. Click on the new toggle button at the top right of the SFX editor to draw a waveform, and optionally pitch it an octave down with the &amp;quot;bass&amp;quot; toggle button. Waveform instruments can be used from inside SFX instruments, and also observe the detune, reverb and dampen filters.&lt;/p&gt;
+&lt;img loading=&quot;lazy&quot; style=&quot;margin-bottom:16px&quot; border=0 src=&quot;/media/1/waveform_editor.png&quot; alt=&quot;&quot; /&gt;
+&lt;p&gt;Here are a couple of short demos (excuse the new WIP player -- it needs an initial tap to load it for browser compatibility). The first pattern shows some custom bass and lead instruments that are quite different from the built-in waveforms. Patterns 2&amp;amp;3 are more subtle, but those two instruments are also quite tonally different from any of the standard ones.&lt;/p&gt;
+&lt;p&gt; &lt;iframe src=&quot;sfxp2.php?id=1_6&quot; width=&quot;402&quot; height=&quot;300&quot; style=&quot;border:none; overflow:hidden&quot; scrolling=&quot;no&quot; allow=&quot;autoplay&quot;&gt;&lt;/iframe&gt;&lt;a style=&quot;cursor:pointer; font-size:8pt&quot; 
+	onclick='
+ 		
+ 		var el = document.getElementById(&quot;sfxcode_1_6&quot;);
+
+ 		if (el.style.display == &quot;none&quot;)
+ 			el.style.display = &quot;&quot;;
+ 		else
+ 			el.style.display = &quot;none&quot;;
+ 		
+ 		microAjax(&quot;/bbs/sfxc/1_6.txt&quot;,
+				function (retdata){
+					var el = document.getElementById(&quot;sfxcode_1_6&quot;);
+					el.innerHTML = retdata;
+					el.focus();
+					el.select();
+				}
+			);
+ 	'&gt;
+
+ 	[sfx]
+
+	&lt;/a&gt;
+		&lt;textarea rows=3 class=lexinput id=&quot;sfxcode_1_6&quot; style=&quot;width:480px;background-color:#fed;display:none;overflow:hidden;
+	 	font-size:4pt;&quot;&gt;&lt;/textarea&gt;
+	&lt;/p&gt;
+&lt;p&gt;I think that doodling custom waveforms is great fun and opens up a new world of possibilities, but of course that in itself does set off alarm bells in terms of fantasy console design. I've come to view them as a worthwhile source of complexity that feels playful rather than overwhelming, and without creating a discontinuous jump in the &amp;quot;PICO-8 sound&amp;quot;. Having said that, I'm sure I'll look back one day at earlier PICO-8 music with nostalgia for its particular simple charms. Here's a fitting tune by &lt;a href=&quot;https://www.lexaloffle.com/bbs/?uid=44175&quot;&gt; @ridgek&lt;/a&gt; to send off the old version!&lt;/p&gt;
+&lt;p&gt;
+			&lt;table&gt;&lt;tr&gt;&lt;td&gt;
+			&lt;a href=&quot;/bbs/?pid=137660#p&quot;&gt;
+			&lt;img src=&quot;/bbs/thumbs/pico8_fairwellfairfriend-0.png&quot; style=&quot;height:256px&quot;&gt;&lt;/a&gt;
+			&lt;/td&gt;&lt;td width=10&gt;&lt;/td&gt;&lt;td valign=top&gt;
+			&lt;a href=&quot;/bbs/?pid=137660#p&quot;&gt;
+			Farewell, Fair Friend 🎈&lt;/a&gt;&lt;br&gt;&lt;br&gt;
+			by &lt;a href=&quot;/bbs/?uid=44175&quot;&gt;
+			ridgek&lt;/a&gt;
+			&lt;br&gt;&lt;br&gt;&lt;br&gt;
+			&lt;a href=&quot;/bbs/?pid=137660#p&quot;&gt;
+			[Click to Play]&lt;/a&gt;
+			&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+		&lt;/p&gt;
+&lt;h1&gt;Music Scale Snapping&lt;/h1&gt;
+&lt;p&gt;A low-key (ha!) feature of PICO-8 since very early on is that holding CTRL while drawing frequencies snaps each note to the C minor pentatonic scale. This is useful for both sound effects and music -- you can't really go wrong walking up and down (or jumping around) those 5 notes.&lt;/p&gt;
+&lt;p&gt;In 0.2.6, the scale that is snapped to while holding CTRL can now be customized in the music editor. There is a toggle button at the bottom right to switch between volume and scale snapping. Click on the keyboard to toggle scale selection mode. There are two buttons for transposing (&amp;lt;&amp;lt;, &amp;gt;&amp;gt;), 3 preset scales, and an invert button to get 3 more:&lt;/p&gt;
+&lt;div&gt;
+				&lt;div class=scrollable_with_touch style=&quot;width:100%; max-width:800px; overflow:auto; margin-bottom:12px&quot;&gt;
+				&lt;table style=&quot;width:100%&quot; cellspacing=0 cellpadding=0&gt;
+				&lt;tr&gt;&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+				&lt;td background=/gfx/code_bg0.png&gt;
+				&lt;div style=&quot;font-family : courier; color: #000000; display:absolute; padding-left:10px;
+				padding-top:4px; padding-bottom:4px;
+				&quot;&gt;
+				&lt;pre&gt;Dim   Diminished 7th    // invert to get a whole-half scale
+Maj   Major scale       // invert to get pentatonic
+Who   Whole tone scale  // invert to get.. the other whole tone scale&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;Changing the scale does nothing to alter the existing SFX -- it is applied only when holding CTRL and drawing frequencies.&lt;/p&gt;
+&lt;img loading=&quot;lazy&quot; style=&quot;margin-bottom:16px&quot; border=0 src=&quot;/media/1/scale_snapping.png&quot; alt=&quot;&quot; /&gt;
+&lt;h2&gt;A Little Music Theory&lt;/h2&gt;
+&lt;p&gt;What is a scale anyway? Very roughly speaking, it is a selection of notes that are chosen to have a particular character or mood when used together. You might already be familiar with the scale formed by all of the white notes on a piano (or using keys qwertyu in PICO-8): C Major. Hit the &lt;code&gt;Maj&lt;/code&gt; preset button to select this scale, and hold down CTRL to doodle a sound (spd:1) or melody (spd:16) in frequency mode.&lt;/p&gt;
+&lt;p&gt;Inverting the major scale (hit &lt;code&gt;Inv&lt;/code&gt;) gives an Eb minor pentatonic scale, which is another name for all of the black notes. Try doodling some shapes again, and see how different that sounds. I think pentatonic scales are the most useful for starting out with melodies and sound effects, with its bright, resonant sound. To get from Eb minor pentatonic back to the default C minor pentatonic scale, hit &lt;code&gt;&amp;lt;&amp;lt;&lt;/code&gt; 3 times to transpose down 3 semitones. Examples of major and pentatonic scales are given in the first 2 patterns:&lt;/p&gt;
+&lt;p&gt; &lt;iframe src=&quot;sfxp2.php?id=1_7&quot; width=&quot;402&quot; height=&quot;300&quot; style=&quot;border:none; overflow:hidden&quot; scrolling=&quot;no&quot; allow=&quot;autoplay&quot;&gt;&lt;/iframe&gt;&lt;a style=&quot;cursor:pointer; font-size:8pt&quot; 
+	onclick='
+ 		
+ 		var el = document.getElementById(&quot;sfxcode_1_7&quot;);
+
+ 		if (el.style.display == &quot;none&quot;)
+ 			el.style.display = &quot;&quot;;
+ 		else
+ 			el.style.display = &quot;none&quot;;
+ 		
+ 		microAjax(&quot;/bbs/sfxc/1_7.txt&quot;,
+				function (retdata){
+					var el = document.getElementById(&quot;sfxcode_1_7&quot;);
+					el.innerHTML = retdata;
+					el.focus();
+					el.select();
+				}
+			);
+ 	'&gt;
+
+ 	[sfx]
+
+	&lt;/a&gt;
+		&lt;textarea rows=3 class=lexinput id=&quot;sfxcode_1_7&quot; style=&quot;width:480px;background-color:#fed;display:none;overflow:hidden;
+	 	font-size:4pt;&quot;&gt;&lt;/textarea&gt;
+	&lt;/p&gt;
+&lt;p&gt;The other two scale presets also have their own distinctive character, with examples above in patterns 2..4. &lt;code&gt;Who&lt;/code&gt; for a wholetone scale (every second semitone -- pattern 2), gives a floating ethereal feeling. Good for things like &amp;quot;falling down a hole&amp;quot; or &amp;quot;found a secret level&amp;quot;. &lt;code&gt;Dim&lt;/code&gt; for a 4-note diminished 7th scale (every third semitone -- pattern 3) gives something more unresolved (&amp;quot;entering a hidden chamber&amp;quot;, or &amp;quot;a boss appears&amp;quot;). Inverting the diminished scale gives the whole-half diminished which has an even more mysterious quality that is more like &amp;quot;that lever triggered something but we don't know what it is yet&amp;quot;.&lt;/p&gt;
+&lt;p&gt;These are oversimplified and silly examples, but I hope it gives you an idea of the kind of things you can explore with scales! If you'd like to know more, I highly recommend &lt;a href=&quot;https://www.lexaloffle.com/bbs/?uid=11292&quot;&gt; @Gruber&lt;/a&gt;'s &lt;a href=&quot;https://www.youtube.com/watch?v=Zg483HJ6rtM&amp;amp;amp;list=PLur95ujyAigsqZR1aNTrVGAvXD7EqywdS&amp;amp;amp;index=11&quot;&gt;tutorial series&lt;/a&gt; that has a lot of handy music theory weaved in and also &lt;a href=&quot;https://www.lexaloffle.com/bbs/?uid=49583&quot;&gt; @bikibird&lt;/a&gt;'s &lt;a href=&quot;https://www.lexaloffle.com/bbs/?tid=53972&quot;&gt;interactive music theory tutorials&lt;/a&gt;.&lt;/p&gt;
+&lt;h1&gt;Handheld Improvements&lt;/h1&gt;
+&lt;p&gt;With the rise of handheld devices like the &lt;a href=&quot;https://youtu.be/KTb6ik1Eb40?si=f2_pPYQOZdf9fUSC&amp;amp;amp;t=2028&quot;&gt;RGB30&lt;/a&gt; and &lt;a href=&quot;https://www.youtube.com/watch?v=0ztXYZReSRw&quot;&gt;Miyoo Mini Plus&lt;/a&gt;, there are many more handheld users of PICO-8 now (welcome aboard!). 0.2.6 has a few adjustments to make life easier:&lt;/p&gt;
+&lt;h3&gt;Metadata Mending&lt;/h3&gt;
+&lt;p&gt;When favouriting a bbs cart in 0.2.5g using the typical RGB30 / MM+ configuration, it was showing up as a local file with no metadata (blue cart icon instead of orange). Not a huge problem, but those carts can not show their full title, author and lose the ability to auto-update and find similar carts.&lt;/p&gt;
+&lt;p&gt;0.2.6 fixes that bug, and also deals with those carts by pinging the bbs for metadata when they are opened. So to &amp;quot;mend&amp;quot; such a bbs cartridge that has a blue label in the favourites list, just open it once while wifi is enabled.&lt;/p&gt;
+&lt;h3&gt;merge_joysticks&lt;/h3&gt;
+&lt;p&gt;This is an option in config.txt, that treats the first n controllers as if they were a single merged controller. This is useful in situations where you want to use the built-in buttons on a handheld device, but then later plug in a controller (e.g. when you connect it to a TV), but want that controller to also be used for the same player. To set up PICO-8 for such a system, use &lt;code&gt;merge_joysticks 2&lt;/code&gt; in config.txt.&lt;/p&gt;
+&lt;h3&gt;Shutdown from Options&lt;/h3&gt;
+&lt;p&gt;You can now close PICO-8 from the options menu while playing a game. This is handy for devices that do not have a 'kill app' option / button combination. Previously it was necessary to first exit to splore, then open a cartridge menu and use the options menu from there.&lt;/p&gt;
+&lt;h1&gt;Miscellaneous&lt;/h1&gt;
+&lt;h3&gt;Mac Universal Binaries&lt;/h3&gt;
+&lt;p&gt;PICO-8 now ships with native support for Apple silicon, as well as intel versions bundled as a universal binary. The exporters produce executables in that same universal format. To do this, I had to bump the minimum required MacOS to 10.8. I know there are still a few of you out there using PICO-8 on older Macs that will otherwise become doorstops. I don't have a good solution for this yet, but later on I'll look at setting up a legacy build system for such machines if there is sufficient demand.&lt;/p&gt;
+&lt;h3&gt;Menuitem Button Filtering&lt;/h3&gt;
+&lt;p&gt;By default, pause menu items creating using menuitem() respond to any button press, including left and right. This is handy in some situations (toggle buttons) but annoying or dangerous in others (clear game data). menuitem() can now take a bit mask in the high bits of the first parameter, indicating which button presses to ignore. Bits 0x100 and 0x200 mean LEFT and RIGHT, so if you can ignore those button presses with:&lt;/p&gt;
+&lt;div&gt;
+				&lt;div class=scrollable_with_touch style=&quot;width:100%; max-width:800px; overflow:auto; margin-bottom:12px&quot;&gt;
+				&lt;table style=&quot;width:100%&quot; cellspacing=0 cellpadding=0&gt;
+				&lt;tr&gt;&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+				&lt;td background=/gfx/code_bg0.png&gt;
+				&lt;div style=&quot;font-family : courier; color: #000000; display:absolute; padding-left:10px;
+				padding-top:4px; padding-bottom:4px;
+				&quot;&gt;
+				&lt;pre&gt;menuitem(0x301, &amp;quot;option 1&amp;quot;, my_callback)&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h3&gt;Improved Search&lt;/h3&gt;
+&lt;p&gt;The search box in splore and on the bbs now returns more sensible results. Posts are sorted by number of stars, so if you type in &amp;quot;celeste&amp;quot;, the first two results will be the original Celeste and Celeste 2. Imagine that! As a side-effect hack, you can search for &amp;quot; &amp;quot; and get an all-time highest starred cartridges list.&lt;/p&gt;
+&lt;p&gt;While working on search and scanning the BBS for preprocessor breakage, I made this collage of the 14 pages of featured cartridges that are now available (out of around 18k published carts). W00t! \o/&lt;/p&gt;
+&lt;img loading=&quot;lazy&quot; style=&quot;margin-bottom:16px&quot; border=0 src=&quot;/media/1/bbs_14pages_half.jpg&quot; alt=&quot;&quot; /&gt;
+&lt;h3&gt;Preprocessor Removal&lt;/h3&gt;
+&lt;p&gt;This is an internal change, but worth mentioning. 0.2.6 no longer uses a preprocessor at all (thanks to z8lua), so all of the code is running through a (modified) Lua 5.2 implementation as-is. Most of this happened in 0.2.5*, but there were a few leftover language features like short form print (using ?) and number parsing. 0.2.6 now also allows the use of &amp;quot;do&amp;quot; instead of &amp;quot;then&amp;quot; in if statements, which is something the preprocessor allowed (by accident!) and a number of early carts use it. There is a small amount of breakage of older carts that have things like unclosed or otherwise ill-formed comments that shouldn't be accepted. For those types of cases, I'm gradually working through older carts to make stealth fixes where needed. At this point the vast majority of existing carts should run as expected -- please do let me know if you see something weird that isn't a syntax error, which I can scan the BBS for automatically.&lt;/p&gt;
+&lt;h3&gt;Socials&lt;/h3&gt;
+&lt;p&gt;There are 2 new social usernames addable to your BBS profile: &lt;a href=&quot;https://twitch.tv&quot;&gt;twitch.tv&lt;/a&gt;, and &lt;a href=&quot;https://bsky.app&quot;&gt;bluesky&lt;/a&gt; which is now open for signups without an invite. My social network of choice is still the fediverse / mastodon, but I think bluesky has the potential to coexist and be a nice place in the future ~ especially if they end up supporting gifs.&lt;/p&gt;
+&lt;p&gt;-&amp;gt; &lt;a href=&quot;https://www.lexaloffle.com/settings.php&quot;&gt;Add social handles to your profile&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;-&amp;gt; &lt;a href=&quot;https://www.lexaloffle.com/bbs/superblog.php?suggest_follows=bluesky&quot;&gt;Find other lexaloffle users on bluesky / twitch&lt;/a&gt;&lt;/p&gt;
+&lt;h1&gt;Changelog&lt;/h1&gt;
+&lt;p&gt;&lt;div&gt;&lt;div&gt;&lt;input type=&quot;button&quot; value=&quot; Show &quot; onClick=&quot;if (this.parentNode.parentNode.getElementsByTagName('div')[1].getElementsByTagName('div')[0].style.display != '') { this.parentNode.parentNode.getElementsByTagName('div')[1].getElementsByTagName('div')[0].style.display = '';		this.innerText = ''; this.value = ' Hide '; } else { this.parentNode.parentNode.getElementsByTagName('div')[1].getElementsByTagName('div')[0].style.display = 'none'; this.innerText = ''; this.value = ' Show '; }&quot;&gt;&lt;/div&gt;&lt;div&gt;&lt;div style=&quot;display: none;&quot;&gt;&lt;br /&gt;
+v0.2.6b&lt;/p&gt;
+&lt;p&gt;Added: 2 more players worth of mappable keyboard controls in config.txt (button_keys)&lt;br /&gt;
+Changed: finished removing preprocessor; was causing e.g. &amp;quot;function --[[oops]]f() end&amp;quot;&lt;br /&gt;
+Changed: &amp;quot;do&amp;quot; can be used instead of &amp;quot;then&amp;quot; // a bunch of older carts were able to do this via preprocessor&lt;br /&gt;
+Changed: removed CTRL-O as a way to open the cpu profiler so that custom devkit carts can use it&lt;br /&gt;
+Fixed: When bbs carts folder is inside root_path, opening favourite while offline clobbers item metadata&lt;br /&gt;
+Fixed: Missing metadata for favourited carts; bbs is pinged to grab metadata and splore item is mended on play&lt;br /&gt;
+Fixed: save() / export() called from headless script on existing file only overwrites every second file&lt;br /&gt;
+Fixed: pasting music pattern data does not recreate sfx instruments that do not already exist in target cart&lt;br /&gt;
+Fixed: Format string when exporting .wav is unstable / insecure&lt;br /&gt;
+Fixed: bad block scope caused by nested short forms e.g. if (1)?&amp;quot;foo&amp;quot; // #dinkykong, /bbs/?tid=140066&lt;br /&gt;
+Fixed: &amp;gt;&amp;gt;&amp;lt;=, &amp;lt;&amp;lt;&amp;gt;= operators missing (from 0.2.5d)&lt;br /&gt;
+Fixed: atan2(1, 0x8000) returns 0.25 (should be 0.75)&lt;br /&gt;
+Fixed: audio crackling on Miyoo Mini Plus (regression in 0.2.6, but unreleased)&lt;/p&gt;
+&lt;p&gt;v0.2.6&lt;/p&gt;
+&lt;p&gt;Added: Custom waveform instruments&lt;br /&gt;
+Added: Configurable scales in music editor (for using ctrl to snap to scale)&lt;br /&gt;
+Added: Inverted draw operations&lt;br /&gt;
+Added: Video and spritesheet memory addresses can be mapped to 0x8000, 0xa000, 0xc000, or 0xe000&lt;br /&gt;
+Added: stat(111): same as stat(109) except returns a higher value on web to overfill audio and reduce crackle&lt;br /&gt;
+Added: menuitem(0x300|index, ...) ignores left and right button presses. 0x7000 to ignore X/O/MENU.&lt;br /&gt;
+Added: config.txt &amp;quot;capture_timestamps 1&amp;quot; to use timestamps as suffix in screen/video capture filenames&lt;br /&gt;
+Added: (Mac) Universal binaries, also generated when exporting&lt;br /&gt;
+Added: (Mac) Updated to SDL2 2.28.5 (-&amp;gt; minimum MacOS version is now 10.7)&lt;br /&gt;
+Added: config.txt:merge_joysticks to map n controllers to a player (e.g. to plug a gamepad into a handheld)&lt;br /&gt;
+Added: config.txt:use_wget to use wget for downloads instead of libcurl (wget must be installed)&lt;br /&gt;
+Added: SHUTDOWN PICO-8 from the options menu while running a cartridge in -splore mode&lt;br /&gt;
+Added: Preserve window position and size when switching to and from fullscreen mode&lt;br /&gt;
+Changed: ADD(TBL, X, NIL) now behaves the same as ADD(TBL, X) (used to produce an out of bounds error)&lt;br /&gt;
+Improved: Moved internal globals out of top level to improve vm perf on carts with no _draw()&lt;br /&gt;
+Improved: Boot time and memory usage reduced on low end machines&lt;br /&gt;
+Fixed: 0x808 audio produces buzz on web browsers that mix at 48000MHz (ref: #rp8, #waterflakes)&lt;br /&gt;
+Fixed: When bbs carts folder is inside root_path, favourited carts show up as local files without titles&lt;br /&gt;
+Fixed: (from 0.2.5d) compound operators (a+=1) cost more than their expanded equivalents (a=a+1)&lt;br /&gt;
+Fixed: cstore out of range when storing to self while running a bbs cart causes segfault&lt;br /&gt;
+Fixed: tab complete on non-existant directory adds garbage to commandline&lt;br /&gt;
+Fixed: can not navigate songs patterns with -/+ when pattern is empty&lt;br /&gt;
+Fixed: backspace/del removing cart from favourites list even when inside the fold-out cartridge menu&lt;/p&gt;
+&lt;p&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;/p&gt;
+&lt;hr /&gt;
+&lt;p&gt;That's all for now -- I'll catch you in a couple of weeks with a &lt;a href=&quot;https://www.picotron.net&quot;&gt;new machine&lt;/a&gt;!&lt;/p&gt;
+	</description>
+            <link>https://www.lexaloffle.com/bbs/?tid=140421</link>
+            <guid isPermaLink="true">https://www.lexaloffle.com/bbs/?tid=140421</guid>
+	<pubDate>Wed, 28 Feb 2024 13:33:08 UTC</pubDate>
+    </item>
+
+
+<item>
+            <title>Elf Curling</title>
+            <description>
+&lt;p&gt;
+			&lt;table&gt;&lt;tr&gt;&lt;td&gt;
+			&lt;a href=&quot;/bbs/?pid=139154#p&quot;&gt;
+			&lt;img src=&quot;/bbs/thumbs/pico8_elf_curling-2.png&quot; style=&quot;height:256px&quot;&gt;&lt;/a&gt;
+			&lt;/td&gt;&lt;td width=10&gt;&lt;/td&gt;&lt;td valign=top&gt;
+			&lt;a href=&quot;/bbs/?pid=139154#p&quot;&gt;
+			Elf Curling&lt;/a&gt;&lt;br&gt;&lt;br&gt;
+			by &lt;a href=&quot;/bbs/?uid=1&quot;&gt;
+			zep&lt;/a&gt;
+			&lt;br&gt;&lt;br&gt;&lt;br&gt;
+			&lt;a href=&quot;/bbs/?pid=139154#p&quot;&gt;
+			[Click to Play]&lt;/a&gt;
+			&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+		&lt;/p&gt;
+&lt;p&gt;A wee game for the the 2023 Holiday Bundle: &lt;a href=&quot;https://www.lexaloffle.com/bbs/?tid=55407&quot;&gt;https://www.lexaloffle.com/bbs/?tid=55407&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;It is 2 player, but if you'd like to play around with both teams, you can enable 'hotseat' mode in the pause menu which allows using the same controls for both teams.&lt;/p&gt;
+&lt;p&gt;The goal is to get as many curling stones inside or even barely touching the red (5 points) and blue (2 points) circles, counted at the end of the match. Each elf is assigned a fixed amount of time to do whatever they like, including jumping on stones, riding them around, and pushing around the opponents' curling stones or players.&lt;/p&gt;
+&lt;p&gt;There are no points awarded for having elves in the circles at the end of the match -- it is just about the stones, for a maximum of 15 points. The last elf has the last-move advantage, but only 7 seconds instead of 10. The first 2 elves get 15 seconds each. Players can decide who goes first with a game of real-world rock paper scissors, and the first player to press X goes first.&lt;/p&gt;
+&lt;p&gt;Controls: [O] (z on the keyboard) to jump, dpad/cursors to skate around.&lt;br /&gt;
+Both elves and stones start curling when they are spinning fast enough.&lt;/p&gt;
+	</description>
+            <link>https://www.lexaloffle.com/bbs/?tid=55482</link>
+            <guid isPermaLink="true">https://www.lexaloffle.com/bbs/?tid=55482</guid>
+	<pubDate>Mon, 25 Dec 2023 18:32:07 UTC</pubDate>
+    </item>
+
+
+<item>
+            <title>Loom Valley</title>
+            <description>
+&lt;p&gt;
+			&lt;table&gt;&lt;tr&gt;&lt;td&gt;
+			&lt;a href=&quot;/bbs/?pid=135203#p&quot;&gt;
+			&lt;img src=&quot;/bbs/thumbs/pico8_lv-2.png&quot; style=&quot;height:256px&quot;&gt;&lt;/a&gt;
+			&lt;/td&gt;&lt;td width=10&gt;&lt;/td&gt;&lt;td valign=top&gt;
+			&lt;a href=&quot;/bbs/?pid=135203#p&quot;&gt;
+			loom valley&lt;/a&gt;&lt;br&gt;&lt;br&gt;
+			by &lt;a href=&quot;/bbs/?uid=1&quot;&gt;
+			zep&lt;/a&gt;
+			&lt;br&gt;&lt;br&gt;&lt;br&gt;
+			&lt;a href=&quot;/bbs/?pid=135203#p&quot;&gt;
+			[Click to Play]&lt;/a&gt;
+			&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+		&lt;/p&gt;
+&lt;p&gt;X to accelerate -- try to stay on the ground to maintain speed!&lt;/p&gt;
+&lt;p&gt;This is a 1022 byte cartridge made for the &lt;a href=&quot;https://itch.io/jam/pico-1k-2023&quot;&gt;pico-1k jam&lt;/a&gt;, but while I was commenting it I found a bunch of unused junk, so now it is 999 bytes compressed :) (see the code in tab 1, minified by &lt;a href=&quot;https://www.lexaloffle.com/bbs/?uid=29645&quot;&gt; @thisismypassword&lt;/a&gt;'s excellent &lt;a href=&quot;https://thisismypassport.github.io/shrinko8&quot;&gt;Shrinko8&lt;/a&gt; )&lt;/p&gt;
+&lt;p&gt;pico1k entry page: &lt;a href=&quot;https://itch.io/jam/pico-1k-2023/rate/2289420&quot;&gt;https://itch.io/jam/pico-1k-2023/rate/2289420&lt;/a&gt;&lt;/p&gt;
+	</description>
+            <link>https://www.lexaloffle.com/bbs/?tid=54397</link>
+            <guid isPermaLink="true">https://www.lexaloffle.com/bbs/?tid=54397</guid>
+	<pubDate>Sun, 01 Oct 2023 10:54:00 UTC</pubDate>
+    </item>
+
+
+<item>
+            <title>Fill Pattern Catalogue</title>
+            <description>
+&lt;p&gt;
+			&lt;table&gt;&lt;tr&gt;&lt;td&gt;
+			&lt;a href=&quot;/bbs/?pid=130531#p&quot;&gt;
+			&lt;img src=&quot;/bbs/thumbs/pico8_fillp_cat-2.png&quot; style=&quot;height:256px&quot;&gt;&lt;/a&gt;
+			&lt;/td&gt;&lt;td width=10&gt;&lt;/td&gt;&lt;td valign=top&gt;
+			&lt;a href=&quot;/bbs/?pid=130531#p&quot;&gt;
+			fill pattern catalogue&lt;/a&gt;&lt;br&gt;&lt;br&gt;
+			by &lt;a href=&quot;/bbs/?uid=1&quot;&gt;
+			zep&lt;/a&gt;
+			&lt;br&gt;&lt;br&gt;&lt;br&gt;
+			&lt;a href=&quot;/bbs/?pid=130531#p&quot;&gt;
+			[Click to Play]&lt;/a&gt;
+			&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+		&lt;/p&gt;
+&lt;p&gt;This is a little tool for viewing all possible 4x4 fill patterns, after removing duplicates which are the same pattern inverted, translated, rotated, or flipped in x/y/diagonally. There are 65536 possible raw fill patterns (1 &amp;lt;&amp;lt; 16), but only 433 unique patterns once &amp;quot;equivalent&amp;quot; ones have been discarded.&lt;/p&gt;
+&lt;p&gt;To use a fill pattern that you like, prefix it with &amp;quot;0x&amp;quot; (it is a hexadecimal number) and pass it fillp():&lt;/p&gt;
+&lt;div&gt;
+				&lt;div class=scrollable_with_touch style=&quot;width:100%; max-width:800px; overflow:auto; margin-bottom:12px&quot;&gt;
+				&lt;table style=&quot;width:100%&quot; cellspacing=0 cellpadding=0&gt;
+				&lt;tr&gt;&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+				&lt;td background=/gfx/code_bg0.png&gt;
+				&lt;div style=&quot;font-family : courier; color: #000000; display:absolute; padding-left:10px;
+				padding-top:4px; padding-bottom:4px;
+				&quot;&gt;
+				&lt;pre&gt;fillp(0x95a6)
+circfill(64,64,40,0xacd)
+fillp() -- reset
+&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;Press UP and DOWN to browse the catalogue, [X] to invert and [O] (z/c) to hide the info bar.&lt;/p&gt;
+&lt;img loading=&quot;lazy&quot; style=&quot;margin-bottom:16px&quot; border=0 src=&quot;/media/1/fillp_cat2_3.gif&quot; alt=&quot;&quot; /&gt;
+&lt;p&gt;I don't know if there is a &lt;a href=&quot;https://en.wikipedia.org/wiki/Burnside%27s_lemma&quot;&gt;more efficient&lt;/a&gt; way to calculate groups (or the &lt;a href=&quot;https://math.stackexchange.com/questions/2506511/applying-burnsides-lemma-to-translations&quot;&gt;number of groups&lt;/a&gt;) for these &lt;a href=&quot;https://en.wikipedia.org/wiki/Equivalence_relation&quot;&gt;equivalence relations&lt;/a&gt;, but PICO-8 is more than fast enough to brute force it, so that's what this cartridge does! For each 16-bit fill pattern, its group id (the &amp;quot;orbit&amp;quot;) is calculated by applying every combination of transformation and returning the lowest result. If that value not already found in the list of patterns, it is added.&lt;/p&gt;
+&lt;p&gt;I was able to take a few shortcuts though -- for example, calculating 90 degree rotations is not necessary, because for every orientation there is a combinations of flipping in x, y and through the diagonal (transpose) that is equivalent to that rotation.&lt;/p&gt;
+	</description>
+            <link>https://www.lexaloffle.com/bbs/?tid=52986</link>
+            <guid isPermaLink="true">https://www.lexaloffle.com/bbs/?tid=52986</guid>
+	<pubDate>Mon, 05 Jun 2023 09:02:44 UTC</pubDate>
+    </item>
+
+
+<item>
+            <title>Picotron Playground (Part II)</title>
+            <description>
+&lt;p&gt;Hey All! I've been trucking on some Picotron stuff a bit lately, and I've added a lot of it to the current build of Picotron Playground which you can play around with in your browser here:&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://www.lexaloffle.com/picotron.php?page=playground&quot;&gt;https://www.lexaloffle.com/picotron.php?page=playground&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;A quick recap for some context: &lt;a href=&quot;https://www.picotron.net&quot;&gt;Picotron&lt;/a&gt; is a fantasy workstation that aims to be extremely &lt;a href=&quot;/picotron.php?page=faq&quot;&gt;hackable and flexible&lt;/a&gt;. It is not quite in production yet, but an experimental web version &lt;a href=&quot;https://www.lexaloffle.com/picotron.php?page=playground&quot;&gt;is available&lt;/a&gt; ~ that's what &amp;quot;Picotron Playground&amp;quot; is. The desktop version of Picotron, with built-in dev tools + HTML exporter are planned for &lt;a href=&quot;https://www.lexaloffle.com/picotron.php?page=roadmap&quot;&gt;later this year&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;For more background, see also: &lt;a href=&quot;https://www.lexaloffle.com/bbs/?tid=50923&quot;&gt;Part I: The release thread&lt;/a&gt;&lt;/p&gt;
+&lt;h2&gt;Code Editor&lt;/h2&gt;
+&lt;p&gt;The code editor is now implemented as a GUI component that anyone can embed in their own programs. This will make it easier to create things like bespoke programming toys and scriptable level editing tools. Have a look at /demos/proggy.p64 to see how this works (although, that api might change a little later). It is still janky, but now janky in a more powerful way!&lt;/p&gt;
+&lt;img loading=&quot;lazy&quot; style=&quot;margin-bottom:16px&quot; border=0 src=&quot;/media/1/159_proggy_sand.png&quot; alt=&quot;&quot; /&gt;
+&lt;div&gt;
+				&lt;div class=scrollable_with_touch style=&quot;width:100%; max-width:800px; overflow:auto; margin-bottom:12px&quot;&gt;
+				&lt;table style=&quot;width:100%&quot; cellspacing=0 cellpadding=0&gt;
+				&lt;tr&gt;&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+				&lt;td background=/gfx/code_bg0.png&gt;
+				&lt;div style=&quot;font-family : courier; color: #000000; display:absolute; padding-left:10px;
+				padding-top:4px; padding-bottom:4px;
+				&quot;&gt;
+				&lt;pre&gt;cd /demos
+load proggy.p64
+--&amp;gt; CTRL-R&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;Click a button to load each snippet, and type for live changes. For example try copying and pasting the 'paint' snippet into the bottom of 'decay' or 'sand'.&lt;/p&gt;
+&lt;p&gt;Side note: proggy.p64 has multiple tabs open when you load it-- each of these is a running a separate process (edit /system/tools/code.lua). This way, tools can focus on having a single file open, and let the WM handle having multiple files open in a unified way.&lt;/p&gt;
+&lt;h2&gt;Palette&lt;/h2&gt;
+&lt;p&gt;The palette has changed a little since v7, and I think possibly this will be the finished Picotron system palette. 16 is a smidgen duller, 23~26 are slightly brighter, and 30 is now a much brighter magenta. I don't know if anyone has gone very deep into the palette yet, but here's the new version for reference:&lt;/p&gt;
+&lt;img loading=&quot;lazy&quot; style=&quot;margin-bottom:16px&quot; border=0 src=&quot;https://www.lexaloffle.com/dl/wip/picotron_pal_wip_v4.png&quot; alt=&quot;&quot; /&gt;
+&lt;p&gt;It is possible to set RGB values for the palette in Picotron, but windowed applications will need to lean heavily on the default 32 colour palette, and I think it will often be used as a starting point for building other palettes.&lt;/p&gt;
+&lt;h2&gt;Graphics API&lt;/h2&gt;
+&lt;p&gt;The graphics pipeline design document now including a step-by-step summary of how a pixel is drawn (near the end): &lt;a href=&quot;https://www.lexaloffle.com/dl/docs/picotron_gfx_pipeline.html&quot;&gt;https://www.lexaloffle.com/dl/docs/picotron_gfx_pipeline.html&lt;/a&gt;&lt;/p&gt;
+&lt;h3&gt;Indexed Display Palette&lt;/h3&gt;
+&lt;p&gt;v.8 now includes an indexed display palette (64 bytes starting from 0x5480) similar to PICO-8's one. It defaults to an identity palette (0, 1, 2..) and so has no effect. The display palette provides an easier way to do palette swaps &amp;amp; cycles etc at the end of each frame without having to mess around with the RGB display palette.&lt;/p&gt;
+&lt;h3&gt;Separate Target Mask for Shapes&lt;/h3&gt;
+&lt;p&gt;Shape drawing functions (circfill etc) now get their own separate target_mask at 0x550b that defaults to 0. The target mask is applied to whatever value is already in pixel to be drawn over, so 0 means &amp;quot;don't care about what is already there&amp;quot;. There are two reasons for this:&lt;/p&gt;
+&lt;p&gt;The first is that the default behaviour when drawing colour 0 is now for it to be drawn solid, while sprites can at the same time be drawn with transparency for colour 0. This is much more intuitive and also matches PICO-8's behaviour.&lt;/p&gt;
+&lt;p&gt;The second reason is that drawing horizontal spans can be optimized when not caring about what colour values are being drawn over: when target_mask is 0, each output value is only a function of the draw colour(s) and fill pattern. I've reduced the (fantasy) cpu cost in this case by 50% and can likely reduce it further later after optimising that code path.&lt;/p&gt;
+&lt;h3&gt;Default Colour Table Stencil Bit Values&lt;/h3&gt;
+&lt;p&gt;The behaviour of pal() and palt() have been changed to make it easier to set (and ignore) stencil bits:&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://www.lexaloffle.com/dl/docs/picotron_gfx_pipeline.html#Colour_Tables&quot;&gt;https://www.lexaloffle.com/dl/docs/picotron_gfx_pipeline.html#Colour_Tables&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;(near the end of that section)&lt;/p&gt;
+&lt;h3&gt;Setting palette entries&lt;/h3&gt;
+&lt;p&gt;Instead of poking, you can use pal(1, 0xrrggbb, 2) to set rgb palette entries.&lt;/p&gt;
+&lt;div&gt;
+				&lt;div class=scrollable_with_touch style=&quot;width:100%; max-width:800px; overflow:auto; margin-bottom:12px&quot;&gt;
+				&lt;table style=&quot;width:100%&quot; cellspacing=0 cellpadding=0&gt;
+				&lt;tr&gt;&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+				&lt;td background=/gfx/code_bg0.png&gt;
+				&lt;div style=&quot;font-family : courier; color: #000000; display:absolute; padding-left:10px;
+				padding-top:4px; padding-bottom:4px;
+				&quot;&gt;
+				&lt;pre&gt;pal(1,0xff0000,2) -- too red
+circfill(200,100,50,1)&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;It can also take a table of entries like PICO-8:&lt;/p&gt;
+&lt;div&gt;
+				&lt;div class=scrollable_with_touch style=&quot;width:100%; max-width:800px; overflow:auto; margin-bottom:12px&quot;&gt;
+				&lt;table style=&quot;width:100%&quot; cellspacing=0 cellpadding=0&gt;
+				&lt;tr&gt;&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+				&lt;td background=/gfx/code_bg0.png&gt;
+				&lt;div style=&quot;font-family : courier; color: #000000; display:absolute; padding-left:10px;
+				padding-top:4px; padding-bottom:4px;
+				&quot;&gt;
+				&lt;pre&gt;pal({0xff0000,0x00ff00,0x0000ff},2)
+for i=1,3 do circfill(200 + i*50,100,20,i) end&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h2&gt;PODs&lt;/h2&gt;
+&lt;p&gt;PODs (Picotron Object Data) are strings that store the contents of Lua values, sort of like JSON. They're used for many things internally, but none of them are very relevant to Picotron Playground (yet?). v.8 includes some improvements to the POD format, and the result is that it will eventually possible to store images, maps and other data very quickly, with reasonable compression built in -- straight from the Lua object to disk and back again. If you're curious, you can find some details here:&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://www.lexaloffle.com/dl/docs/picotron_pod.html&quot;&gt;https://www.lexaloffle.com/dl/docs/picotron_pod.html&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;Trivia: since the start of Lexaloffle I've been working with .pod files, generated by my in-house editing multitool called Poido (from &amp;quot;Pointy Dough&amp;quot; because it includes a low-poly modeller, but I use it mostly for bitmap editing and palette design). I thought that with Picotron I'd finally be free of pod files, but it turned out to be the most fitting name once again!&lt;/p&gt;
+&lt;p&gt;One thing you can try: paste this POD into the code editor and hit enter a couple of times to get an embedded image (that as legal lua source code returns the scrawled star sprite that is being shown in the editor).&lt;/p&gt;
+&lt;div&gt;
+				&lt;div class=scrollable_with_touch style=&quot;width:100%; max-width:800px; overflow:auto; margin-bottom:12px&quot;&gt;
+				&lt;table style=&quot;width:100%&quot; cellspacing=0 cellpadding=0&gt;
+				&lt;tr&gt;&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+				&lt;td background=/gfx/code_bg0.png&gt;
+				&lt;div style=&quot;font-family : courier; color: #000000; display:absolute; padding-left:10px;
+				padding-top:4px; padding-bottom:4px;
+				&quot;&gt;
+				&lt;pre&gt;--[[pod_type=&amp;quot;image&amp;quot;]]unpod(&amp;quot;b64:bHo0AO4AAAD8AAAAcXB4dQBAAAAEANABAAAAAwTw0B8d8C0uAwCwLD7wK17wKW7wKH4DAPEBJ57wJa7wJL7wI87wI97wIgMA_UEh7vAg-gHwCn6w-gLwCr5w-gPwCf4AMP4VcP4ogP4lsP4kwP4i4P4g8AH_HvAC-h3wBP4b8Ab_GPAJ-hbwCv4V8Az_FPAN-hPwDv4S8A-_EQQAABQAAAQA8CMN-gIwzvAN-gBgvvAN7oCu8AzuoJ7wC97QjvALvvACbvALjvAGXvAKfvAIXvAJfvAKXgkA8BEMXvAIPvAPTvAHPvARPvAHLvATLvAHHvAVDvAvDvD-gw==&amp;quot;)&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;It is a userdata object compressed (first with RLE encoding and then with lz4) and then re-encoded back into a text-friendly form as base-64. Whenever you copy an object in Picotron (like a sprite or section of map), it will be encoded like this for easy sharing between programs and other users.&lt;/p&gt;
+&lt;p&gt;You might also notice some .info.pod files lying around -- these are used to store per-folder metadata but will eventually be hidden. Per-file metadata is stored within the pod format itself.&lt;/p&gt;
+&lt;h2&gt;Other Stuff&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;Proper CPU model -- infinite loops won't bring the system down, and each frame, the available CPU is shared around each process.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;64-bit pokes: you can use poke8 / peek8 and the new peek operator *&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;aliasing can be implemented by mounting files -- &amp;quot;ls&amp;quot; is now aliased as &amp;quot;dir&amp;quot;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;see /demos/stencil.p64 for an example of using stencil bits&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;try out rnd_blend and/or stretch at the start of /demos/chonky.p64&lt;/li&gt;
+&lt;/ul&gt;
+	</description>
+            <link>https://www.lexaloffle.com/bbs/?tid=52692</link>
+            <guid isPermaLink="true">https://www.lexaloffle.com/bbs/?tid=52692</guid>
+	<pubDate>Fri, 12 May 2023 10:53:12 UTC</pubDate>
+    </item>
+
+
+<item>
+            <title>Time For Lunch</title>
+            <description>
+&lt;p&gt;
+			&lt;table&gt;&lt;tr&gt;&lt;td&gt;
+			&lt;a href=&quot;/bbs/?pid=129209#p&quot;&gt;
+			&lt;img src=&quot;/bbs/thumbs/pico8_tfl-1.png&quot; style=&quot;height:256px&quot;&gt;&lt;/a&gt;
+			&lt;/td&gt;&lt;td width=10&gt;&lt;/td&gt;&lt;td valign=top&gt;
+			&lt;a href=&quot;/bbs/?pid=129209#p&quot;&gt;
+			Time For Lunch&lt;/a&gt;&lt;br&gt;&lt;br&gt;
+			by &lt;a href=&quot;/bbs/?uid=1&quot;&gt;
+			zep&lt;/a&gt;
+			&lt;br&gt;&lt;br&gt;&lt;br&gt;
+			&lt;a href=&quot;/bbs/?pid=129209#p&quot;&gt;
+			[Click to Play]&lt;/a&gt;
+			&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+		&lt;/p&gt;
+&lt;p&gt;Here's an orange and some sandwiches for The Wizard. Use the dpad (or cursors) to control the owl, and watch out for castle creatures. Also, take care of the basket ~~ if it hits a wall too hard, it might smash. Good luck!&lt;/p&gt;
+&lt;p&gt;This is a short game made for Ludum Dare vol.53&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://ldjam.com/events/ludum-dare/53/$366108&quot;&gt;https://ldjam.com/events/ludum-dare/53/$366108&lt;/a&gt;&lt;/p&gt;
+	</description>
+            <link>https://www.lexaloffle.com/bbs/?tid=52576</link>
+            <guid isPermaLink="true">https://www.lexaloffle.com/bbs/?tid=52576</guid>
+	<pubDate>Mon, 01 May 2023 00:34:00 UTC</pubDate>
+    </item>
+
+
+<item>
+            <title>Lovebyte 2023 Intros</title>
+            <description>
+&lt;p&gt;It's &lt;a href=&quot;https://lovebyte.party/&quot;&gt;Lovebyte&lt;/a&gt; this weekend, and I made a couple of size-coded intros for it. First up is an invite to another &lt;a href=&quot;https://en.wikipedia.org/wiki/Demoscene&quot;&gt;demoscene&lt;/a&gt; party: &lt;a href=&quot;https://sessions.frontl1ne.net/&quot;&gt;SESSIONS in C4 LAN 2023 SPRING&lt;/a&gt;,  taking place in Shizuoka / Japan end of April. This one is 512 bytes, around 100 of which are for the music (don't wait for the drop!): &lt;/p&gt;
+&lt;p&gt;
+			&lt;table&gt;&lt;tr&gt;&lt;td&gt;
+			&lt;a href=&quot;/bbs/?pid=125754#p&quot;&gt;
+			&lt;img src=&quot;/bbs/thumbs/pico8_sessions_2023-0.png&quot; style=&quot;height:256px&quot;&gt;&lt;/a&gt;
+			&lt;/td&gt;&lt;td width=10&gt;&lt;/td&gt;&lt;td valign=top&gt;
+			&lt;a href=&quot;/bbs/?pid=125754#p&quot;&gt;
+			sessions 2023 invitro&lt;/a&gt;&lt;br&gt;&lt;br&gt;
+			by &lt;a href=&quot;/bbs/?uid=1&quot;&gt;
+			zep&lt;/a&gt;
+			&lt;br&gt;&lt;br&gt;&lt;br&gt;
+			&lt;a href=&quot;/bbs/?pid=125754#p&quot;&gt;
+			[Click to Play]&lt;/a&gt;
+			&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+		&lt;/p&gt;
+&lt;p&gt;I also tried a bunch of 64 byte intros based on poking semi-structured patterns into ram that could double as audio and visual data. This is the one that I submitted to the 64 byte compo:&lt;/p&gt;
+&lt;p&gt;
+			&lt;table&gt;&lt;tr&gt;&lt;td&gt;
+			&lt;a href=&quot;/bbs/?pid=125754#p&quot;&gt;
+			&lt;img src=&quot;/bbs/thumbs/pico8_attack_on_venus-0.png&quot; style=&quot;height:256px&quot;&gt;&lt;/a&gt;
+			&lt;/td&gt;&lt;td width=10&gt;&lt;/td&gt;&lt;td valign=top&gt;
+			&lt;a href=&quot;/bbs/?pid=125754#p&quot;&gt;
+			attack_on_venus&lt;/a&gt;&lt;br&gt;&lt;br&gt;
+			by &lt;a href=&quot;/bbs/?uid=1&quot;&gt;
+			zep&lt;/a&gt;
+			&lt;br&gt;&lt;br&gt;&lt;br&gt;
+			&lt;a href=&quot;/bbs/?pid=125754#p&quot;&gt;
+			[Click to Play]&lt;/a&gt;
+			&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+		&lt;/p&gt;
+&lt;div&gt;
+				&lt;div class=scrollable_with_touch style=&quot;width:100%; max-width:800px; overflow:auto; margin-bottom:12px&quot;&gt;
+				&lt;table style=&quot;width:100%&quot; cellspacing=0 cellpadding=0&gt;
+				&lt;tr&gt;&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+				&lt;td background=/gfx/code_bg0.png&gt;
+				&lt;div style=&quot;font-family : courier; color: #000000; display:absolute; padding-left:10px;
+				padding-top:4px; padding-bottom:4px;
+				&quot;&gt;
+				&lt;pre&gt;t=9::_::i=t^4
+poke(i,51&amp;amp;(t*(i&amp;gt;&amp;gt;9)*(i%64)/&amp;hearts;))
+t+=1/&amp;hearts;
+sfx(i)goto _&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;Here's a variation that has more of a horror feeling:&lt;/p&gt;
+&lt;p&gt;
+			&lt;table&gt;&lt;tr&gt;&lt;td&gt;
+			&lt;a href=&quot;/bbs/?pid=125754#p&quot;&gt;
+			&lt;img src=&quot;/bbs/thumbs/pico8_forest_horror-0.png&quot; style=&quot;height:256px&quot;&gt;&lt;/a&gt;
+			&lt;/td&gt;&lt;td width=10&gt;&lt;/td&gt;&lt;td valign=top&gt;
+			&lt;a href=&quot;/bbs/?pid=125754#p&quot;&gt;
+			forest_horror&lt;/a&gt;&lt;br&gt;&lt;br&gt;
+			by &lt;a href=&quot;/bbs/?uid=1&quot;&gt;
+			zep&lt;/a&gt;
+			&lt;br&gt;&lt;br&gt;&lt;br&gt;
+			&lt;a href=&quot;/bbs/?pid=125754#p&quot;&gt;
+			[Click to Play]&lt;/a&gt;
+			&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+		&lt;/p&gt;
+&lt;div&gt;
+				&lt;div class=scrollable_with_touch style=&quot;width:100%; max-width:800px; overflow:auto; margin-bottom:12px&quot;&gt;
+				&lt;table style=&quot;width:100%&quot; cellspacing=0 cellpadding=0&gt;
+				&lt;tr&gt;&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+				&lt;td background=/gfx/code_bg0.png&gt;
+				&lt;div style=&quot;font-family : courier; color: #000000; display:absolute; padding-left:10px;
+				padding-top:4px; padding-bottom:4px;
+				&quot;&gt;
+				&lt;pre&gt;t=19::_::i=t^4
+poke(i,
+0xdb&amp;amp;(t*(i&amp;gt;&amp;gt;7)*(i%64)/&amp;hearts;))
+t+=1/&amp;hearts;
+sfx(i)goto _
+&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;If you want to try these in a browser, you can copy and paste them into &lt;a href=&quot;https://www.pico-8-edu.com&quot;&gt;PICO-8 Education Edition&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;I didn't have time to make 128 byte &amp;amp; 256 byte entries, which happen to be the two compos that have their own dedicated fantasy console sections! But I'll definitely be back next year -- it's great to have a whole party focused on size-limited prods, and that is inspiring so many great pieces of work. There are more events happening tonight (Sunday, UTC) and you can catch them &lt;a href=&quot;https://www.twitch.tv/lovebytedemoparty&quot;&gt;live on twitch&lt;/a&gt; or archived &lt;a href=&quot;https://www.youtube.com/@Lovebytedemoparty&quot;&gt;on youtube&lt;/a&gt;. You can find a schedule on the &lt;a href=&quot;https://lovebyte.party&quot;&gt;lovebyte website&lt;/a&gt;. Good luck to those taking part tonight! &amp;lt;3&lt;/p&gt;
+&lt;p&gt;&lt;object width=&quot;640&quot; height=&quot;400&quot;&gt;&lt;param name=&quot;movie&quot; value=&quot;https://www.youtube.com/v/jQgp5tHx3t4&amp;hl=en&amp;fs=1&amp;rel=0&quot;&gt;&lt;/param&gt;&lt;param name=&quot;allowFullScreen&quot; value=&quot;true&quot;&gt;&lt;/param&gt;&lt;param name=&quot;allowscriptaccess&quot; value=&quot;always&quot;&gt;&lt;/param&gt;&lt;embed src=&quot;https://www.youtube.com/v/jQgp5tHx3t4&amp;hl=en&amp;fs=1&amp;rel=0&quot; type=&quot;application/x-shockwave-flash&quot; allowscriptaccess=&quot;always&quot; allowfullscreen=&quot;true&quot; width=&quot;640&quot; height=&quot;400&quot;&gt;&lt;/embed&gt;&lt;/object&gt;&lt;/p&gt;
+	</description>
+            <link>https://www.lexaloffle.com/bbs/?tid=51606</link>
+            <guid isPermaLink="true">https://www.lexaloffle.com/bbs/?tid=51606</guid>
+	<pubDate>Sun, 12 Feb 2023 13:21:08 UTC</pubDate>
+    </item>
+
+
+<item>
+            <title>PICO-8 0.2.5g</title>
+            <description>
+&lt;img loading=&quot;lazy&quot; style=&quot;margin-bottom:16px&quot; border=0 src=&quot;/media/1/pico8_025f.gif&quot; width=384 height=384 alt=&quot;&quot; /&gt;
+&lt;p&gt;More bugfixin'&lt;/p&gt;
+&lt;p&gt;PICO-8 &lt;span style=&quot;text-decoration: line-through;&quot;&gt;0.2.5f&lt;/span&gt; 0.2.5g is up now up on &lt;a href=&quot;https://www.lexaloffle.com/games.php?page=updates&quot;&gt;lexaloffle&lt;/a&gt;, &lt;a href=&quot;https://www.humblebundle.com/home/library&quot;&gt;Humble&lt;/a&gt;, &lt;a href=&quot;https://lexaloffle.itch.io/pico-8&quot;&gt;itch.io&lt;/a&gt;, and for &lt;a href=&quot;https://lexaloffle.com/bbs/?tid=34009&quot;&gt;PocketCHIP&lt;/a&gt; and web (&lt;a href=&quot;https://pico-8-edu.com&quot;&gt;Education Edition&lt;/a&gt;).&lt;/p&gt;
+&lt;h3&gt;v0.2.5g Changelog:&lt;/h3&gt;
+&lt;p&gt;Fixed: tonum(&amp;quot;123abc&amp;quot;) returns 123 (should return nothing) // also breaks split(). regression in 0.2.5f&lt;br /&gt;
+Fixed: draw_tabs not listed by CONFIG command&lt;/p&gt;
+&lt;h3&gt;v0.2.5f Changelog:&lt;/h3&gt;
+&lt;p&gt;Added: CONFIG DRAW_TABS 1 to show tab characters in code editor (previously required editing config.txt)&lt;br /&gt;
+Changed: tokenizer recognises long comments / string using [=&lt;em&gt;[ ]=&lt;/em&gt;] e.g. [==[ long string ]==]&lt;br /&gt;
+Changed: Nested long comments and strings no longer allowed&lt;br /&gt;
+Changed: x % 0 gives 0 (was x)&lt;br /&gt;
+Optimised: software blitter now faster when using PocketCHIP, windowed raspi or blit_method 1&lt;br /&gt;
+Fixed: infinite tokens exploit introduced in 0.2.5d (due to pre-processor changes)&lt;br /&gt;
+Fixed: &amp;gt;&amp;gt;&amp;gt;= operator is a NOP (bug introduced in 0.2.5d)&lt;br /&gt;
+Fixed: (raspi 32-bit) window not visible under Gameforce Chi / EmuELEC -- bug introduced in 0.2.5e&lt;br /&gt;
+Fixed: s=&amp;quot;x&amp;quot;..&amp;quot;=&amp;quot; counts as 4 tokens instead of 5&lt;br /&gt;
+Fixed: Running a cartridge containing &lt;em&gt;meta&lt;/em&gt; data prints a memory allocation warning to stdout&lt;br /&gt;
+Fixed: Code compressing to &amp;gt;= 32k reports size as (compressed_size &amp;amp; 0x7fff) resulting in corruped exports&lt;br /&gt;
+Fixed: stat(54) loops when left-most channel is looping (should return total played ticks on current pattern)&lt;br /&gt;
+Fixed: extcmd(&amp;quot;audio_rec&amp;quot;) maximum length is 2 minutes (meant to be 8 -- and now only applies to web)&lt;br /&gt;
+Fixed: Frog Home crashes because of (now unsupported) &amp;quot;local x+=..&amp;quot; form. // INSTALL_GAMES for fixed version&lt;br /&gt;
+Fixed: Starting P8SCII font height affects total line height even when no characters are printed in that font&lt;/p&gt;
+	</description>
+            <link>https://www.lexaloffle.com/bbs/?tid=51465</link>
+            <guid isPermaLink="true">https://www.lexaloffle.com/bbs/?tid=51465</guid>
+	<pubDate>Fri, 03 Feb 2023 20:29:16 UTC</pubDate>
+    </item>
+
+
+<item>
+            <title>Picotron Playground</title>
+            <description>
+&lt;img loading=&quot;lazy&quot; style=&quot;margin-bottom:16px&quot; border=0 src=&quot;/media/1/picotron_playground.gif&quot; alt=&quot;&quot; /&gt;
+&lt;p&gt;&lt;strong&gt;UPDATE: Part II Thread&lt;/strong&gt; &lt;a href=&quot;https://www.lexaloffle.com/bbs/?tid=52692&quot;&gt;https://www.lexaloffle.com/bbs/?tid=52692&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;A new year, a new fantasy machine! &lt;a href=&quot;https://www.lexaloffle.com/picotron.php?page=playground&quot;&gt;Picotron Playground&lt;/a&gt; is an experimental web version of &lt;a href=&quot;https://www.picotron.net&quot;&gt;Picotron&lt;/a&gt;'s WIP runtime and API, bundled with a terminal and code editor in order to make some toy programs. You can read more about the goals of Picotron and its specifications in the FAQ:&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://www.lexaloffle.com/picotron.php?page=faq&quot;&gt;https://www.lexaloffle.com/picotron.php?page=faq&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;Although I'm still mostly occupied with PICO-8 and Voxatron, I hope this will be a good way to chip away at the project and let future users try out the API in a low-stakes way before it is ready to go into production.&lt;/p&gt;
+&lt;p&gt;Launch Picotron Playground here:&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://www.lexaloffle.com/picotron.php?page=playground&quot;&gt;https://www.lexaloffle.com/picotron.php?page=playground&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;Note: you'll need a US layout keyboard and &lt;strong&gt;there is no permanent storage&lt;/strong&gt;, although the clipboard does work if you want to store some snippets. Please work on anything larger than toy programs at your own risk!&lt;/p&gt;
+&lt;h3&gt;Running Demos&lt;/h3&gt;
+&lt;p&gt;Demo programs will appear (and probably disappear!) over time to try out various API functionality. At the moment they are mostly simple graphics demos that can be loaded via the terminal:&lt;/p&gt;
+&lt;div&gt;
+				&lt;div class=scrollable_with_touch style=&quot;width:100%; max-width:800px; overflow:auto; margin-bottom:12px&quot;&gt;
+				&lt;table style=&quot;width:100%&quot; cellspacing=0 cellpadding=0&gt;
+				&lt;tr&gt;&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+				&lt;td background=/gfx/code_bg0.png&gt;
+				&lt;div style=&quot;font-family : courier; color: #000000; display:absolute; padding-left:10px;
+				padding-top:4px; padding-bottom:4px;
+				&quot;&gt;
+				&lt;pre&gt;/$ cd /demos
+/demos$ ls
+/demos$ load dots&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;CTRL-R to run it.&lt;br /&gt;
+ESC ESC to get back into the editor&lt;br /&gt;
+CTRL-L clears the screen (important!)&lt;br /&gt;
+The &amp;quot;reset&amp;quot; command can be used to get the default palette back.&lt;/p&gt;
+&lt;h3&gt;Using the API&lt;/h3&gt;
+&lt;p&gt;The most interesting feature of Picotron's runtime is probably the gfx pipeline, which is documented here: &lt;a href=&quot;https://www.lexaloffle.com/dl/docs/picotron_gfx_pipeline.html&quot;&gt;https://www.lexaloffle.com/dl/docs/picotron_gfx_pipeline.html&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;If you'd like a quick way to load sprites, try copying and pasting from PICO-8 gfx editor and pass that as a string to userdata():&lt;/p&gt;
+&lt;div&gt;
+				&lt;div class=scrollable_with_touch style=&quot;width:100%; max-width:800px; overflow:auto; margin-bottom:12px&quot;&gt;
+				&lt;table style=&quot;width:100%&quot; cellspacing=0 cellpadding=0&gt;
+				&lt;tr&gt;&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+				&lt;td background=/gfx/code_bg0.png&gt;
+				&lt;div style=&quot;font-family : courier; color: #000000; display:absolute; padding-left:10px;
+				padding-top:4px; padding-bottom:4px;
+				&quot;&gt;
+				&lt;pre&gt;my_sprite = userdata&amp;quot;[gfx ... /gfx]&amp;quot;
+spr(my_sprite, 100, 100)
+&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;There are some more examples of how to manipulate userdata in the &lt;a href=&quot;https://www.lexaloffle.com/picotron.php?page=faq&quot;&gt;FAQ&lt;/a&gt;.&lt;/p&gt;
+&lt;h3&gt;Limitations&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;There's no audio yet.&lt;/li&gt;
+&lt;li&gt;There is provisional cpu cycle counting, but it is incomplete and infinite loops will still crash your browser. You can get the cpu with stat(1), but it currently also includes cycles used by system processes. &lt;/li&gt;
+&lt;li&gt;Some of PICO-8's more forgiving behaviors do not not exist [yet?], including being able to divide by zero, and automatically converting floats to ints.&lt;/li&gt;
+&lt;li&gt;The code editor is still a bit janky. Sorry!&lt;/li&gt;
+&lt;li&gt;btn() works but just for a placeholder P1 6-button layout.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;I think that's enough to poke around for now. If you have any questions please post them in this thread or ask me on &lt;a href=&quot;https://tinyurl.com/zepfedi&quot;&gt;mastodon&lt;/a&gt; as there isn't a Picotron sub-forum yet. I hope you enjoy it!&lt;/p&gt;
+	</description>
+            <link>https://www.lexaloffle.com/bbs/?tid=50923</link>
+            <guid isPermaLink="true">https://www.lexaloffle.com/bbs/?tid=50923</guid>
+	<pubDate>Sat, 31 Dec 2022 15:33:43 UTC</pubDate>
+    </item>
+
+
+<item>
+            <title>Wooden Toy Joinery</title>
+            <description>
+&lt;p&gt;
+			&lt;table&gt;&lt;tr&gt;&lt;td&gt;
+			&lt;a href=&quot;/bbs/?pid=123001#p&quot;&gt;
+			&lt;img src=&quot;/bbs/thumbs/pico8_wtj-0.png&quot; style=&quot;height:256px&quot;&gt;&lt;/a&gt;
+			&lt;/td&gt;&lt;td width=10&gt;&lt;/td&gt;&lt;td valign=top&gt;
+			&lt;a href=&quot;/bbs/?pid=123001#p&quot;&gt;
+			Wooden Toy Joinery&lt;/a&gt;&lt;br&gt;&lt;br&gt;
+			by &lt;a href=&quot;/bbs/?uid=1&quot;&gt;
+			zep&lt;/a&gt;
+			&lt;br&gt;&lt;br&gt;&lt;br&gt;
+			&lt;a href=&quot;/bbs/?pid=123001#p&quot;&gt;
+			[Click to Play]&lt;/a&gt;
+			&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+		&lt;/p&gt;
+&lt;p&gt;Use the dpad to move head pieces around, join them to tiles (only some tiles join, and only on certain sides), and move your creation to the target area to complete each puzzle.&lt;/p&gt;
+&lt;p&gt;A wee game for &lt;a href=&quot;https://www.lexaloffle.com/bbs/?tid=50644&quot;&gt;Twelve Days of PICO-8 Christmas 2022&lt;/a&gt;. To get the full experience, play it from &lt;a href=&quot;https://www.lexaloffle.com/bbs/?uid=14839&quot;&gt; @TheTomster&lt;/a&gt;'s &lt;a href=&quot;https://www.lexaloffle.com/bbs/?tid=50644&quot;&gt;menu cart&lt;/a&gt;!&lt;/p&gt;
+&lt;p&gt;Some scenes from other games in the collection:&lt;/p&gt;
+&lt;p&gt;&lt;img loading=&quot;lazy&quot; style=&quot;margin-bottom:16px&quot; border=0 src=&quot;/media/1/mittens_0.gif&quot; alt=&quot;&quot; /&gt;&lt;img loading=&quot;lazy&quot; style=&quot;margin-bottom:16px&quot; border=0 src=&quot;/media/1/freezing knights battle 3_0.gif&quot; alt=&quot;&quot; /&gt;&lt;img loading=&quot;lazy&quot; style=&quot;margin-bottom:16px&quot; border=0 src=&quot;/media/1/puffy coats_0.gif&quot; alt=&quot;&quot; /&gt;&lt;img loading=&quot;lazy&quot; style=&quot;margin-bottom:16px&quot; border=0 src=&quot;/media/1/decigobloopbloop_0.gif&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;Wooden Toy Joinery was a 3 day collaboration with my 9 year-old while visiting my folk's place in the south of New Zealand. Yesterday out of nowhere my Dad produced what looks to be one of the first BASIC programs I ever wrote (maybe.. 1985?). I didn't have access to a computer at the time, and this was before understanding what variables are. I suspect I was imitating a pick-a-path adventure code listing I'd seen, but applied to an action game.&lt;/p&gt;
+&lt;img loading=&quot;lazy&quot; style=&quot;margin-bottom:16px&quot; border=0 src=&quot;/media/1/jumping_bug.png&quot; alt=&quot;&quot; /&gt;
+	</description>
+            <link>https://www.lexaloffle.com/bbs/?tid=50824</link>
+            <guid isPermaLink="true">https://www.lexaloffle.com/bbs/?tid=50824</guid>
+	<pubDate>Sun, 25 Dec 2022 12:51:42 UTC</pubDate>
+    </item>
+
+
+<item>
+            <title>PICO-8 0.2.5d</title>
+            <description>
+&lt;img loading=&quot;lazy&quot; style=&quot;margin-bottom:16px&quot; border=0 src=&quot;/media/1/bunny_1.gif&quot; alt=&quot;&quot; /&gt;
+&lt;p&gt;Hey all! Time for some more bugfixes and esoteric features / QOL improvements to finish off 0.2.5*. And thanks to some snippets from &lt;a href=&quot;https://www.lexaloffle.com/bbs/?uid=14958&quot;&gt; @samhocevar&lt;/a&gt;'s excellent &lt;a href=&quot;https://github.com/samhocevar/z8lua&quot;&gt;z8lua&lt;/a&gt;, some cleaner code parsing. &lt;a href=&quot;https://www.pico-8.com&quot;&gt;PICO-8&lt;/a&gt; 0.2.5d is now up on &lt;a href=&quot;https://www.lexaloffle.com/games.php?page=updates&quot;&gt;lexaloffle&lt;/a&gt;, &lt;a href=&quot;https://www.humblebundle.com/home/library&quot;&gt;Humble&lt;/a&gt;, &lt;a href=&quot;https://lexaloffle.itch.io/pico-8&quot;&gt;itch.io&lt;/a&gt;, and for &lt;a href=&quot;https://lexaloffle.com/bbs/?tid=34009&quot;&gt;PocketCHIP&lt;/a&gt; and web (&lt;a href=&quot;https://pico-8-edu.com&quot;&gt;Education Edition&lt;/a&gt;).&lt;/p&gt;
+&lt;h3&gt;0.2.5e&lt;/h3&gt;
+&lt;p&gt;0.2.5e fixes a bug in the loader that causes uppercase characters to not be loaded as punyfont (e.g. breaking _ENV).&lt;/p&gt;
+&lt;h3&gt;0.2.5d&lt;/h3&gt;
+&lt;p&gt;Added: tline(bits) to set number of bits used for fractional part of mx,my,mdx,mdy (13 by default)&lt;br /&gt;
+Added: ctrl+mousewheel to scroll code horizontally&lt;br /&gt;
+Added: current bbs cartridge id shown in window title (config.txt show_cart_id_in_title to disable)&lt;br /&gt;
+Added: poke(0x5f36, (@0x5f36)|0x80) to enable character wrap by default when printing&lt;br /&gt;
+Added: blit_method in config.txt  // Can use a software blitter by default (slower but more reliable)&lt;br /&gt;
+Added: reminder when re-locating sprites that only the top half of map is altered by default&lt;br /&gt;
+Added: draw boot sound as note glyphs on startup when sound is off&lt;br /&gt;
+Changed: print() returns both max(cur_x), max(cur_y) and includes non-printed characters (e.g. tabs)&lt;br /&gt;
+Changed: extcmd(&amp;quot;folder&amp;quot;) and extcmd(&amp;quot;set_title&amp;quot;, &amp;quot;foo&amp;quot;) can now be used from bbs carts&lt;br /&gt;
+Changed: Indexing a string out of range returns nil (was &amp;quot;&amp;quot;)&lt;br /&gt;
+Changed: Replaced most of pre-processor with Lua parser modifications based on z8lua (fixes various edge cases)&lt;br /&gt;
+Changed: &amp;quot;a[foo()] += 1&amp;quot; only evaluates foo() once&lt;br /&gt;
+Changed: out-of-bound tile values can be drawn using map(), tline()&lt;br /&gt;
+Changed: extcmd(&amp;quot;audio_rec&amp;quot;) can record a maximum of 8 minutes (was no limit previously)&lt;br /&gt;
+Changed: Rate limits are now per-minute: 10MB of log writes, 64 different files, 10 extcmd(&amp;quot;folder&amp;quot;)'s)&lt;br /&gt;
+Fixed: Infinite tokens hack (was caused by now-replaced pre-processor)&lt;br /&gt;
+Fixed: Only 4 controllers mapped to 0x5f00+76&lt;br /&gt;
+Fixed: h toggles hexadecimal mode in gfx editor (should be ctrl-h -- h is to flip sprite horizontally)&lt;br /&gt;
+Fixed: out-of-bounds value doesn't respect custom map size&lt;br /&gt;
+Fixed: cutting or clearing a selection of sprites does not also clear the sprite flags&lt;br /&gt;
+Fixed: P8SCII repeat-character command fails on zero repetions; ?&amp;quot;a*0bc&amp;quot; should print &amp;quot;ac&amp;quot;, not &amp;quot;abc&amp;quot;&lt;br /&gt;
+Fixed: pxa code compression inefficient when &amp;gt;= 32k matching triplets (typically &amp;quot;000&amp;quot;)&lt;br /&gt;
+Fixed: print() return value max(cur_x) returns 0 when max(cur_x &amp;lt; 0)&lt;br /&gt;
+Fixed: holding menu button to force pause menu to open broken in binary exports&lt;br /&gt;
+Fixed: copying / pasting in commandline doesn't respect punyfont character encoding&lt;br /&gt;
+Fixed: (Manual) Steps 1 &amp;amp; 2 on how to move sprites in the map are in the wrong order&lt;br /&gt;
+Fixed: Unhelpful / no error messages when the wrong format for HELP is used &lt;/p&gt;
+&lt;h3&gt;EDIT: Note for Raspberry Pi Users&lt;/h3&gt;
+&lt;p&gt;0.2.5d/e seem to have a serious issue with the blitter that causes PICO-8 to run, but with a hidden display (i.e. you can hear the boot sound, but not see anything). Unfortunately I won't be able to debug this for another couple of weeks as I'm out of my office -- but in the meantime you can get 0.2.5c from the downloads page under &amp;quot;older versions&amp;quot;. Run it with &lt;code&gt;pico8 -accept_future 1&lt;/code&gt; if you want to load splore cartridges authored in 0.2.5d/e (and it will probably still work). Sorry about this!&lt;/p&gt;
+	</description>
+            <link>https://www.lexaloffle.com/bbs/?tid=50632</link>
+            <guid isPermaLink="true">https://www.lexaloffle.com/bbs/?tid=50632</guid>
+	<pubDate>Tue, 13 Dec 2022 15:16:59 UTC</pubDate>
+    </item>
+
+
+<item>
+            <title>aajibi (512b intro)</title>
+            <description>
+&lt;p&gt;
+			&lt;table&gt;&lt;tr&gt;&lt;td&gt;
+			&lt;a href=&quot;/bbs/?pid=120267#p&quot;&gt;
+			&lt;img src=&quot;/bbs/thumbs/pico8_aajibi-0.png&quot; style=&quot;height:256px&quot;&gt;&lt;/a&gt;
+			&lt;/td&gt;&lt;td width=10&gt;&lt;/td&gt;&lt;td valign=top&gt;
+			&lt;a href=&quot;/bbs/?pid=120267#p&quot;&gt;
+			aajibi (512b intro)&lt;/a&gt;&lt;br&gt;&lt;br&gt;
+			by &lt;a href=&quot;/bbs/?uid=1&quot;&gt;
+			zep&lt;/a&gt;
+			&lt;br&gt;&lt;br&gt;&lt;br&gt;
+			&lt;a href=&quot;/bbs/?pid=120267#p&quot;&gt;
+			[Click to Play]&lt;/a&gt;
+			&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+		&lt;/p&gt;
+&lt;p&gt;Turn on your subwoofer!&lt;/p&gt;
+&lt;p&gt;This is a 512 byte intro I made for &lt;a href=&quot;https://2022.inercia.pt/&quot;&gt;inercia 2022&lt;/a&gt;, a demoparty that took place in Lisbon over the weekend. It's the first time that I put the &lt;a href=&quot;https://www.lexaloffle.com/bbs/?tid=41991&quot;&gt;no longer secret&lt;/a&gt; 0x808 audio channel to use, with around 200 bytes of the (compressed) code spent on generating the music.&lt;/p&gt;
+&lt;p&gt;I was pleased to find that techniques used for golfing down visual effects' code size transfer quite well to audio. There are a lot of expressions in there that change meaning over time in a way that produces some kind of structured progression -- some planned, some not so planned. The whole thing is really a single effect, with a lot of janky math to roll out different audio and gfx layers at different times. I can't completely explain how it works in places, but feel free to ask about anything if you like!&lt;/p&gt;
+&lt;p&gt;This version has commented code in tab 0, but it is probably not a good example to get started with audio synthesis. For anyone game to try using 0x808, here is a simpler example that generates a sine wave at middle C (256Hz)&lt;/p&gt;
+&lt;div&gt;
+				&lt;div class=scrollable_with_touch style=&quot;width:100%; max-width:800px; overflow:auto; margin-bottom:12px&quot;&gt;
+				&lt;table style=&quot;width:100%&quot; cellspacing=0 cellpadding=0&gt;
+				&lt;tr&gt;&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+				&lt;td background=/gfx/code_bg0.png&gt;
+				&lt;div style=&quot;font-family : courier; color: #000000; display:absolute; padding-left:10px;
+				padding-top:4px; padding-bottom:4px;
+				&quot;&gt;
+				&lt;pre&gt;x=0
+function _update()
+  -- write one more byte while there
+  -- is still space in the audio buffer
+  while(stat(108) &amp;lt; stat(109)) do
+    v = sin(x)*32 -- max vol:128
+    x += 256 / 5512 -- middle c
+    poke(0,mid(0,v+128,255))
+    serial(0x808,0,1)
+  end
+end&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;&lt;/div&gt;
+	</description>
+            <link>https://www.lexaloffle.com/bbs/?tid=50098</link>
+            <guid isPermaLink="true">https://www.lexaloffle.com/bbs/?tid=50098</guid>
+	<pubDate>Mon, 07 Nov 2022 18:18:16 UTC</pubDate>
+    </item>
+
+
+<item>
+            <title>PICO-8 0.2.5</title>
+            <description>
+&lt;img loading=&quot;lazy&quot; style=&quot;margin-bottom:16px&quot; border=0 src=&quot;/media/1/boat3b_1.gif&quot; width=384 height=384 alt=&quot;&quot; /&gt;
+&lt;p&gt;Hey All!&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://www.pico-8.com&quot;&gt;PICO-8&lt;/a&gt; 0.2.5 is now up on &lt;a href=&quot;https://www.lexaloffle.com/games.php?page=updates&quot;&gt;lexaloffle&lt;/a&gt;, &lt;a href=&quot;https://www.humblebundle.com/home/library&quot;&gt;Humble&lt;/a&gt;, &lt;a href=&quot;https://lexaloffle.itch.io/pico-8&quot;&gt;itch.io&lt;/a&gt;, and for &lt;a href=&quot;https://lexaloffle.com/bbs/?tid=34009&quot;&gt;PocketCHIP&lt;/a&gt; and web (&lt;a href=&quot;https://pico-8-edu.com&quot;&gt;Education Edition&lt;/a&gt;).&lt;/p&gt;
+&lt;p&gt;Edit: 0.2.5b is now up for Linux users who had trouble connecting to the BBS: &lt;a href=&quot;https://www.lexaloffle.com/bbs/?pid=116441#p&quot;&gt;https://www.lexaloffle.com/bbs/?pid=116441#p&lt;/a&gt;&lt;/p&gt;
+&lt;h2&gt;Built-in Help&lt;/h2&gt;
+&lt;p&gt;PICO-8 0.2.5 has built-in documentation on API functions and other topics. Type &amp;quot;HELP&amp;quot; at the prompt to see a list of topics in blue, and then e.g. &amp;quot;HELP GFX&amp;quot; to get more information about that thing.&lt;/p&gt;
+&lt;p&gt;While in the code editor, you can also press CTRL-U to get help on whatever is under the cursor, including operators and Lua keywords.&lt;/p&gt;
+&lt;div&gt;
+				&lt;div class=scrollable_with_touch style=&quot;width:100%; max-width:800px; overflow:auto; margin-bottom:12px&quot;&gt;
+				&lt;table style=&quot;width:100%&quot; cellspacing=0 cellpadding=0&gt;
+				&lt;tr&gt;&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+				&lt;td background=/gfx/code_bg0.png&gt;
+				&lt;div style=&quot;font-family : courier; color: #000000; display:absolute; padding-left:10px;
+				padding-top:4px; padding-bottom:4px;
+				&quot;&gt;
+				&lt;pre&gt;&amp;gt; HELP FILLP&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;img loading=&quot;lazy&quot; style=&quot;margin-bottom:16px&quot; border=0 src=&quot;/media/1/help_fillp.png&quot; width=384 height=384 alt=&quot;&quot; /&gt;
+&lt;h2&gt;String Indexing&lt;/h2&gt;
+&lt;p&gt;Single characters can now be grabbed from strings using a familiar str[i] style syntax that means something similar to sub(str, i, i). The index is rounded down to the closest integer, and can be negative to index from the end of the string.&lt;/p&gt;
+&lt;div&gt;
+				&lt;div class=scrollable_with_touch style=&quot;width:100%; max-width:800px; overflow:auto; margin-bottom:12px&quot;&gt;
+				&lt;table style=&quot;width:100%&quot; cellspacing=0 cellpadding=0&gt;
+				&lt;tr&gt;&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+				&lt;td background=/gfx/code_bg0.png&gt;
+				&lt;div style=&quot;font-family : courier; color: #000000; display:absolute; padding-left:10px;
+				padding-top:4px; padding-bottom:4px;
+				&quot;&gt;
+				&lt;pre&gt;S=&amp;quot;ABCDE&amp;quot;
+S[2.6]  -- &amp;quot;B&amp;quot;
+S[-2]   -- &amp;quot;D&amp;quot;
+S[99]   -- &amp;quot;&amp;quot;&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;Strings in Lua are immutable, so this can only be used in an expression (on the right hand side of an assignment). e.g. s[2] = &amp;quot;z&amp;quot; is not allowed.&lt;/p&gt;
+&lt;p&gt;rnd(str) is now also accepted and returns a random character from string str.&lt;br /&gt;
+// update: this might not be true from 0.2.5c: &lt;a href=&quot;https://www.lexaloffle.com/bbs/?pid=116415#p&quot;&gt;https://www.lexaloffle.com/bbs/?pid=116415#p&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;I've reverted sub() to pre-0.2.4 behaviour, which means that sub(&amp;quot;abcde&amp;quot;,2,_) returns &amp;quot;bcde&amp;quot;. 0.2.4 was returning single characters when the 3rd parameter is non-numeric, which is now much better handled by str[i] style indexing. (Apologies if you were already using this behaviour!)&lt;/p&gt;
+&lt;h3&gt;Editor Features&lt;/h3&gt;
+&lt;p&gt;gfx_grid_lines in config.txt now takes a colour if you'd like super-visible grid lines in the sprite editor:&lt;/p&gt;
+&lt;img loading=&quot;lazy&quot; style=&quot;margin-bottom:16px&quot; border=0 src=&quot;/media/1/blue_gridlines.png&quot; width=384 height=384 alt=&quot;&quot; /&gt;
+&lt;p&gt;Map selections are now on a separate floating layer:&lt;/p&gt;
+&lt;img loading=&quot;lazy&quot; style=&quot;margin-bottom:16px&quot; border=0 src=&quot;/media/1/floating_selection.gif&quot; alt=&quot;&quot; /&gt;
+&lt;p&gt;Pressing cursor keys in the map when nothing is selected now moves the camera, as I noticed some new users struggling to find/understand the pan tool and instead instinctively reaching for the cursor keys.&lt;/p&gt;
+&lt;h2&gt;PICO1K Tools&lt;/h2&gt;
+&lt;img loading=&quot;lazy&quot; style=&quot;margin-bottom:16px&quot; border=0 src=&quot;/media/1/pico1k_2022.png&quot; width=512 height=194 alt=&quot;&quot; /&gt;
+&lt;p&gt;Some changes intended to be useful for &lt;a href=&quot;https://itch.io/jam/pico-1k-2022&quot;&gt;PICO1K Jam&lt;/a&gt; starting in September:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;ctrl-click on the compressed code capacity to get a realtime compressed size counter in bytes. This is the same size given with the INFO command, and when storing the cartridge as a tiny (code-only) binary rom with &amp;quot;EXPORT -T FOO.P8.ROM&amp;quot;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&amp;quot;EXPORT -T @CLIP&amp;quot; can be used to get a hexdump of that same data written to clipboard. This is not very useful -- just a way to visualise exactly how much data is stored.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;SAVE @URL saves 3 characters when there is no sprite data included by omitting the redundant &amp;quot;&amp;amp;g=&amp;quot;.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2&gt;Web-Exportable Audio&lt;/h2&gt;
+&lt;p&gt;extcmd(&amp;quot;audio_rec&amp;quot;), extcmd(&amp;quot;audio_end&amp;quot;) can be used in web exports. The output file shows up as a downloadable .wav file. I'm hoping this will open the door for some cute sound generation tools.&lt;/p&gt;
+&lt;h2&gt;Variable Width P8SCII Fonts&lt;/h2&gt;
+&lt;p&gt;PICO-8 0.2.5 custom fonts can now specify how wide each character is when printed. This previously handled by doing things like injecting extra P8SCII commands into the output string, but this was cumbersome and meant that such fonts could not be shared as plain data. There were already pixel-wise cursor positioning commands in P8SCII, so I felt it makes sense to make this simpler. Also, I needed it for Picotron 8)&lt;/p&gt;
+&lt;p&gt;To specify a 3-bit width adjustment and 1-bit y offset for character 16..255, the data at 0x5608..0x567f is used. These would otherwise be the bitmap data for characters 1..15 which are all control characters and thus never printed.&lt;/p&gt;
+&lt;p&gt;Each 4-bit nibble in 0x5608..0x567f (low nibbles first) encodes the adjustments for one character:&lt;/p&gt;
+&lt;div&gt;
+				&lt;div class=scrollable_with_touch style=&quot;width:100%; max-width:800px; overflow:auto; margin-bottom:12px&quot;&gt;
+				&lt;table style=&quot;width:100%&quot; cellspacing=0 cellpadding=0&gt;
+				&lt;tr&gt;&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+				&lt;td background=/gfx/code_bg0.png&gt;
+				&lt;div style=&quot;font-family : courier; color: #000000; display:absolute; padding-left:10px;
+				padding-top:4px; padding-bottom:4px;
+				&quot;&gt;
+				&lt;pre&gt;bits 0x7: adjust character width by 0,1,2,3,-4,-3,-2,-1
+bit  0x8: when set, draw the character one pixel higher (useful for latin accents)&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;An addition bit must be set at 0x5605 to enable size adjustments: poke(0x5605, 1). Otherwise the data at 0x5608..0x567f is ignored.&lt;/p&gt;
+&lt;p&gt;To test this out, try loading the font snippet generation tool:&lt;/p&gt;
+&lt;div&gt;
+				&lt;div class=scrollable_with_touch style=&quot;width:100%; max-width:800px; overflow:auto; margin-bottom:12px&quot;&gt;
+				&lt;table style=&quot;width:100%&quot; cellspacing=0 cellpadding=0&gt;
+				&lt;tr&gt;&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+				&lt;td background=/gfx/code_bg0.png&gt;
+				&lt;div style=&quot;font-family : courier; color: #000000; display:absolute; padding-left:10px;
+				padding-top:4px; padding-bottom:4px;
+				&quot;&gt;
+				&lt;pre&gt;&amp;gt; LOAD #FONT_SNIPPET&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;And then paste the following after the comment starting with &amp;quot;font attributes&amp;quot;&lt;/p&gt;
+&lt;div&gt;
+				&lt;div class=scrollable_with_touch style=&quot;width:100%; max-width:800px; overflow:auto; margin-bottom:12px&quot;&gt;
+				&lt;table style=&quot;width:100%&quot; cellspacing=0 cellpadding=0&gt;
+				&lt;tr&gt;&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+				&lt;td background=/gfx/code_bg0.png&gt;
+				&lt;div style=&quot;font-family : courier; color: #000000; display:absolute; padding-left:10px;
+				padding-top:4px; padding-bottom:4px;
+				&quot;&gt;
+				&lt;pre&gt;POKE(0x5605,1) -- turn on adjustments
+POKE(0x5634,0x70) -- set nibble for i to 0x7&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;You can now observe that the big &amp;quot;i&amp;quot; in &amp;quot;quick&amp;quot; near the top of the screen only has 1px of space to the right instead of 2px.&lt;/p&gt;
+&lt;p&gt;Here's a helper function for setting the 4-bit nibble (val) for a given character (c):&lt;/p&gt;
+&lt;div&gt;
+				&lt;div class=scrollable_with_touch style=&quot;width:100%; max-width:800px; overflow:auto; margin-bottom:12px&quot;&gt;
+				&lt;table style=&quot;width:100%&quot; cellspacing=0 cellpadding=0&gt;
+				&lt;tr&gt;&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+				&lt;td background=/gfx/code_bg0.png&gt;
+				&lt;div style=&quot;font-family : courier; color: #000000; display:absolute; padding-left:10px;
+				padding-top:4px; padding-bottom:4px;
+				&quot;&gt;
+				&lt;pre&gt;FUNCTION ADJUST_CHAR(C, VAL)
+  LOCAL ADDR = 0X5600 + ORD(C)\2
+  LOCAL SHFT = (ORD(C) &amp;amp; 1) * 4
+  LOCAL MASK = 0XF &amp;lt;&amp;lt; SHFT
+  POKE(ADDR, (PEEK(ADDR) &amp;amp; ~MASK) | (VAL &amp;lt;&amp;lt; SHFT))
+END&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h2&gt;File Listings (for Dev Tool Carts)&lt;/h2&gt;
+&lt;p&gt;Locally running programs can now use ls(path) to get a listing of any local directory. Entries that end with a &amp;quot;/&amp;quot; are directories. Use stat(124) to get the current path.&lt;/p&gt;
+&lt;div&gt;
+				&lt;div class=scrollable_with_touch style=&quot;width:100%; max-width:800px; overflow:auto; margin-bottom:12px&quot;&gt;
+				&lt;table style=&quot;width:100%&quot; cellspacing=0 cellpadding=0&gt;
+				&lt;tr&gt;&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+				&lt;td background=/gfx/code_bg0.png&gt;
+				&lt;div style=&quot;font-family : courier; color: #000000; display:absolute; padding-left:10px;
+				padding-top:4px; padding-bottom:4px;
+				&quot;&gt;
+				&lt;pre&gt;PATH = STAT(124) -- E.G. /FOO/
+FILES = LS(PATH)
+FOR F IN ALL(FILES) DO
+  COLOR(F[-1] == &amp;quot;/&amp;quot; AND 14 OR 6)
+  PRINT(F)
+END
+&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;BBS cartridges are not able to access local file listings -- this is intended for developing tools to use locally. For example: a utility that makes it easier to browser cartridge data and copy between cartridges using reload() / cstore() which are able to read and write any local cartridge file using the 4th parameter.&lt;/p&gt;
+&lt;h2&gt;Keyboard Scancode Remapper&lt;/h2&gt;
+&lt;p&gt;If you're having trouble getting PICO-8 to detect some keys (especially numeric keypad keys / unusual laptop layouts), there is now a built-in tool for mapping those keypresses to something SDL2 understand. Run PICO-8 from commandline with -scancodes:&lt;/p&gt;
+&lt;p&gt;pico8 -scancodes&lt;/p&gt;
+&lt;p&gt;Or use some other tool to find out which scancodes the keys in question are producing, and then map them to something else in config.txt (look for map_scancodes)&lt;/p&gt;
+&lt;h2&gt;Dynamic Libcurl Support (Linux)&lt;/h2&gt;
+&lt;p&gt;The 32-bit and 64-bit linux builds now try to dynamically load libcurl by default in order to make bbs requests (e.g. download carts from splore). This will hopefully make installing on some platforms easier, including Steam Decks. When libcurl.so is not available, it drops down to the old wget behaviour (requires wget to be installed). If this works well, I'll also see about moving to the same scheme for raspi and mac builds.&lt;/p&gt;
+&lt;h2&gt;More Doodlemud&lt;/h2&gt;
+&lt;p&gt;Doodlemud is a toy multiplayer game designed to test the backend services that PICO-8's high score table (and future projects) will be based on. Try it here: &lt;a href=&quot;https://www.doodlemud.com/#skatepark&quot;&gt;https://www.doodlemud.com/#skatepark&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;This version is running on a completely new backend, custom written from scratch as a self-contained program using libwebsockets. My first attempt was built out of opensource components (nchan, redis, openresty, nginx), but because of PICO-8's unusual requirements, this was making customisation, debugging and devops more complex that it needed to be. Sometimes just reinventing the wheel with a bespoke C program is still the right approach even in the world of web services. There are currently 5 nodes running which are selected based on the user's location when making a new room:&lt;/p&gt;
+&lt;img loading=&quot;lazy&quot; style=&quot;margin-bottom:16px&quot; border=0 src=&quot;/media/1/130_kurage_map.png&quot; alt=&quot;&quot; /&gt;
+&lt;h2&gt;Next Steps&lt;/h2&gt;
+&lt;p&gt;It looks like PICO-8's 0.2.5 API is unlikely to change now (really, this time!), and the next task is to port the new additions to &lt;a href=&quot;https://www.voxatron.com&quot;&gt;Voxatron&lt;/a&gt; for Voxatron 0.3.7. After that I'll continue working on the BBS functionality needed to log in from PICO-8 and submit high scores. If you're curious, you can see the current plan for the SCORESUB() function by typing HELP SCORESUB.&lt;/p&gt;
+&lt;p&gt;That's all for now -- I hope you enjoy the update and as usual let me know here or in &lt;a href=&quot;https://www.lexaloffle.com/bbs/?cat=7#sub=6&quot;&gt;bugs/&lt;/a&gt; if you find anything spooky going on.&lt;/p&gt;
+&lt;p&gt;Full Changelog:&lt;br /&gt;
+&lt;div&gt;&lt;div&gt;&lt;input type=&quot;button&quot; value=&quot; Show &quot; onClick=&quot;if (this.parentNode.parentNode.getElementsByTagName('div')[1].getElementsByTagName('div')[0].style.display != '') { this.parentNode.parentNode.getElementsByTagName('div')[1].getElementsByTagName('div')[0].style.display = '';		this.innerText = ''; this.value = ' Hide '; } else { this.parentNode.parentNode.getElementsByTagName('div')[1].getElementsByTagName('div')[0].style.display = 'none'; this.innerText = ''; this.value = ' Show '; }&quot;&gt;&lt;/div&gt;&lt;div&gt;&lt;div style=&quot;display: none;&quot;&gt;&lt;br /&gt;
+v0.2.5&lt;/p&gt;
+&lt;p&gt;Added: Help topics. Use help command, or ctrl-u in code editor to get help on whatever is at the cursor.&lt;br /&gt;
+Added: (html exports / bbs) downloadable .wav export using extcmd(&amp;quot;audio_rec&amp;quot;), extcmd(&amp;quot;audio_end&amp;quot;)&lt;br /&gt;
+Added: inext (to match next).  -&amp;gt; can do: for i,v in inext,tbl do ... end&lt;br /&gt;
+Added: floating selection layer in map editor (solves various bugs and undo / selection issues)&lt;br /&gt;
+Added: ~ can be used as xor instead of ^^ (same as Lua 5.3/5.4)&lt;br /&gt;
+Added: When running a program locally, ls() can now take a directory name; use stat(124) to get pwd&lt;br /&gt;
+Added: Variable width P8SCII fonts&lt;br /&gt;
+Added: ctrl-click on compressed capcity (bottom right) to get realtime updates of compressed size in bytes&lt;br /&gt;
+Added: export -t @clip to get a hexdump of compressed code section copied to clipboard&lt;br /&gt;
+Added: pico8 -scancodes and map_scancodes (config.txt) for manually mapping keys to alternative scancodes&lt;br /&gt;
+Added: sub(str,pos,pos) can be written as str[pos].&lt;br /&gt;
+Changed: host_framerate&lt;em&gt;control 1 (config.txt) now means &amp;quot;let PICO-8 decide&amp;quot;; is disabled for Mac/Win/Linux&lt;br /&gt;
+Changed: in map editor, pan with cursor keys when nothing is selected&lt;br /&gt;
+Changed: use scancodes for sfx navigation (US:-=&lt;/em&gt;+) and spd change (US:,.&amp;lt;&amp;gt;) to avoid azerty collisions&lt;br /&gt;
+Changed: gfx_grid_lines in config.txt is taken to be a colour for the grid lines (16 for black)&lt;br /&gt;
+Changed: can ctrl-h in gfx editor to toggle hex mode (sprite index shown in hex; map vals shown)&lt;br /&gt;
+Changed: '-' allowed in filenames when not first character&lt;br /&gt;
+Changed: linux builds use libcurl.so for bbs requests, or drops down to wget on failure to dlopen&lt;br /&gt;
+Changed: increased maximum gif len for web exports to 30 seconds&lt;br /&gt;
+Changed: peek/poke can now read/write up to 32767 values (was 8192)&lt;br /&gt;
+Changed: web player default gif len is 16 seconds (was 8)&lt;br /&gt;
+Changed: sub(str, pos, nil) returns whole string (pre-0.2.4 behaviour). For single chars, can now use str[pos].&lt;br /&gt;
+Fixed: Windows reserved filenames (lpt1, com1 etc) are accepted&lt;br /&gt;
+Fixed: Nested coroutines unexpectedly end when interrupted by reaching end of frame&lt;br /&gt;
+Fixed: print() colour is remapped twice when set in parameter // pal(6,7) pal(7,8) print(&amp;quot;white&amp;quot;,6)&lt;br /&gt;
+Fixed: circ() breaks on 32-bit builds, with radius &amp;gt; 1024&lt;br /&gt;
+Fixed: ctrl-c to copy commandline error message does not encode glyphs as unicode&lt;br /&gt;
+Fixed: LS command not resolving relative paths&lt;br /&gt;
+Fixed: twitter char count for chr(127) ○ should be 2 (was 1) and chr(149) ˇ should be 1 (was 2)&lt;br /&gt;
+Fixed: colour parameter not converted from string in rect, rectfill, pset (regression from 0.2.2)&lt;br /&gt;
+Fixed: ord(&amp;quot;foo&amp;quot;, 1, 0) returns &amp;quot;too many ord results&amp;quot; -- should return nothing&lt;br /&gt;
+Fixed: save @url includes ?g= when no gfx data (is redundant)&lt;br /&gt;
+Fixed: (web export) html pause button does not show up as btnp(6) / btn(6)&lt;br /&gt;
+Fixed: (web export) codo_textarea triggering Mac accent character selector even when cart doesn't use clipboard&lt;br /&gt;
+Fixed: save @url failing when encoded length is &amp;gt; 2000 chars long instead of &amp;gt; 2040 charss&lt;br /&gt;
+Fixed: can enter an illegal note (e-5) in sfx editor&lt;br /&gt;
+&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;/p&gt;
+	</description>
+            <link>https://www.lexaloffle.com/bbs/?tid=49075</link>
+            <guid isPermaLink="true">https://www.lexaloffle.com/bbs/?tid=49075</guid>
+	<pubDate>Sun, 28 Aug 2022 10:32:51 UTC</pubDate>
+    </item>
+
+
+<item>
+            <title>PICO-8 0.2.4c</title>
+            <description>
+&lt;p&gt;&lt;a href=&quot;https://www.pico-8.com&quot;&gt;PICO-8&lt;/a&gt; 0.2.4c is now up on &lt;a href=&quot;https://www.lexaloffle.com/games.php?page=updates&quot;&gt;lexaloffle&lt;/a&gt;, &lt;a href=&quot;https://www.humblebundle.com/home/library&quot;&gt;Humble&lt;/a&gt;, &lt;a href=&quot;https://lexaloffle.itch.io/pico-8&quot;&gt;itch.io&lt;/a&gt;, and for &lt;a href=&quot;https://lexaloffle.com/bbs/?tid=34009&quot;&gt;PocketCHIP&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;This is mostly a bug-fixing update; you can see the main 0.2.4 change notes in the &lt;a href=&quot;https://www.lexaloffle.com/bbs/?tid=45538&quot;&gt;0.2.4 thread&lt;/a&gt;.&lt;/p&gt;
+&lt;h2&gt;URL Cartridges&lt;/h2&gt;
+&lt;p&gt;With the release of &lt;a href=&quot;https://www.lexaloffle.com/bbs/?tid=47278&quot;&gt;PICO-8 Education Edition&lt;/a&gt;, it is now possible to encode cartridges into a 2040-character URL that runs it in a web version of PICO-8's editing tools. Only the code and graphics sections are stored.&lt;/p&gt;
+&lt;div&gt;
+				&lt;div class=scrollable_with_touch style=&quot;width:100%; max-width:800px; overflow:auto; margin-bottom:12px&quot;&gt;
+				&lt;table style=&quot;width:100%&quot; cellspacing=0 cellpadding=0&gt;
+				&lt;tr&gt;&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+				&lt;td background=/gfx/code_bg0.png&gt;
+				&lt;div style=&quot;font-family : courier; color: #000000; display:absolute; padding-left:10px;
+				padding-top:4px; padding-bottom:4px;
+				&quot;&gt;
+				&lt;pre&gt;&amp;gt; SAVE @URL
+COPIED URL TO CLIPBOARD
+265 / 2040 CHARS&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h2&gt;Tiny Cartridges&lt;/h2&gt;
+&lt;p&gt;When exporting cartridges to .p8.rom format (the raw 32k block of data that is encoded inside .p8.png argb data), 0.2.4c allows only the code section to be stored using the -t (for tiny) switch:&lt;/p&gt;
+&lt;div&gt;
+				&lt;div class=scrollable_with_touch style=&quot;width:100%; max-width:800px; overflow:auto; margin-bottom:12px&quot;&gt;
+				&lt;table style=&quot;width:100%&quot; cellspacing=0 cellpadding=0&gt;
+				&lt;tr&gt;&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+				&lt;td background=/gfx/code_bg0.png&gt;
+				&lt;div style=&quot;font-family : courier; color: #000000; display:absolute; padding-left:10px;
+				padding-top:4px; padding-bottom:4px;
+				&quot;&gt;
+				&lt;pre&gt;&amp;gt; EXPORT -T TINY.P8.ROM
+WRITING 154 BYTES (CODE ONLY)&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;You should get a file that is exactly as large as the compressed code size reported by INFO. When using LOAD, that file will be loaded into the code section, and the other sections reset to their default states.&lt;/p&gt;
+&lt;p&gt;There isn't much practical use for tiny .P8.ROM files, but I think it is nice to be able to store a tiny program in its true tiny form on disk.&lt;/p&gt;
+&lt;p&gt;On the subject of tiny cartridges, for those making &lt;a href=&quot;https://twitter.com/search?q=%23tweetcart&amp;amp;amp;src=typed_query&quot;&gt;tweetcarts&lt;/a&gt;, you can now ctrl-click on the character count to get a twitter-character count which counts most (but not all!) glyphs as 2 characters.&lt;/p&gt;
+&lt;h2&gt;Metadata&lt;/h2&gt;
+&lt;p&gt;This is another technical one. 0.2.4c introduces a new metadata section to the .p8 file format suggested by &lt;a href=&quot;https://www.lexaloffle.com/bbs/?uid=47515&quot;&gt; @SquidLight&lt;/a&gt; that can be used by external tool authors. Sections with a heading of &lt;code&gt;\n__meta:somestring__\n&lt;/code&gt; are preserved by PICO-8, but not (yet?) utilised by PICO-8 itself. So tool authors can add data to .p8 files by choosing their own meta:label without needing to stuff it into comments, or risk losing data the next time the file is saved by PICO-8 or another tool.&lt;/p&gt;
+&lt;p&gt;More details: &lt;a href=&quot;https://www.lexaloffle.com/bbs/?tid=47063&quot;&gt;https://www.lexaloffle.com/bbs/?tid=47063&lt;/a&gt;&lt;/p&gt;
+&lt;h2&gt;Full Changelog&lt;/h2&gt;
+&lt;div&gt;
+				&lt;div class=scrollable_with_touch style=&quot;width:100%; max-width:800px; overflow:auto; margin-bottom:12px&quot;&gt;
+				&lt;table style=&quot;width:100%&quot; cellspacing=0 cellpadding=0&gt;
+				&lt;tr&gt;&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+				&lt;td background=/gfx/code_bg0.png&gt;
+				&lt;div style=&quot;font-family : courier; color: #000000; display:absolute; padding-left:10px;
+				padding-top:4px; padding-bottom:4px;
+				&quot;&gt;
+				&lt;pre&gt;v0.2.4c
+
+Added: save @url -- stores code + gfx as a URL if it can be encoded in 2040 characters
+Added: html exports store volume/mute and other settings
+Added: ctrl-g in sprite editor to toggle grid lines when zoomed in
+Added: IMPORT -L FOO.PNG to import a 128x128 png to the cartridge label
+Added: EXPORT -L FOO.PNG to export a 128x128 png of the cartridge label
+Added: EXPORT -T FOO.P8.ROM to export only code section (t for tiny)
+Added: ctrl-click on character count (bottom right) to see the twitter count (glyphs count as 2)
+Added: __meta:*__ section to .p8 format -- can be used by external tools to store custom data
+Added: extcmd(&amp;quot;audio_rec&amp;quot;) works from exported binaries, and with custom exported filenames
+Added: read_controllers_in_background in config.txt (0 by default)
+Changed: .p8.rom files that are 0x3d00 bytes or less are loaded into code section
+Changed: saved filenames can not include gylphs, or any of !&amp;quot;#$%&amp;amp;'()*+,-:;&amp;lt;=&amp;gt;?[\]^`{|}~
+Fixed: can't drag and drop png into sprite editor
+Fixed: binary exports: ctrl-r causes crash when there is no whitespace at end of source code
+Fixed: Using -run switch to launch a cart that fails to run -&amp;gt; get stuck in boot screen.
+Fixed: selection after ctrl-a reports length chars+1
+Fixed: draw palette is not observed after changing colours using p8scii control characters
+Fixed: music playback does not follow cursor after first pattern change (regression in 0.2.4b)
+Fixed: transform_screen (config.txt) not observed by pause menus and other overlayed elements
+Fixed: Double-clicking sfx thumbnail (in sfx overview screen) only works after playing music
+Fixed: Pressing [a] to release looping sfx in sfx editor is broken
+Fixed: sfx(46)..sfx(56) return -1 immediately after playing music but before host OS has called audio mixer
+Fixed: Tokens counted as 2 instead of 1: ..= ^= &amp;gt;&amp;gt;&amp;lt;= &amp;lt;&amp;lt;&amp;gt;=
+Fixed: Negative number counted as 2 tokens instead of one when preceeded by: \ &amp;amp; | ^^ &amp;lt;&amp;lt; &amp;gt;&amp;gt; &amp;gt;&amp;gt;&amp;gt; &amp;gt;&amp;gt;&amp;lt; &amp;lt;&amp;lt;&amp;gt;
+Fixed: tostr(tbl) / print(tbl) acts like tostr(tbl, 1) when tbl has a metatable
+Fixed: ?&amp;quot;\tx&amp;quot; does not advance to next tab stop
+Fixed: ?&amp;quot;a\*5\nb&amp;quot; does not repeat newline 5 times
+Fixed: exported label alpha is 0 for colour 0&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;&lt;/div&gt;
+	</description>
+            <link>https://www.lexaloffle.com/bbs/?tid=47328</link>
+            <guid isPermaLink="true">https://www.lexaloffle.com/bbs/?tid=47328</guid>
+	<pubDate>Sun, 10 Apr 2022 22:32:30 UTC</pubDate>
+    </item>
+
+
+<item>
+            <title>PICO-8 Education Edition for Web</title>
+            <description>
+&lt;img loading=&quot;lazy&quot; style=&quot;margin-bottom:16px&quot; border=0 src=&quot;/media/1/pico8_edu_release.gif&quot; width=512 height=512 alt=&quot;&quot; /&gt;
+&lt;p&gt;\o/&lt;/p&gt;
+&lt;p&gt;Say hi to the newest member of the &lt;a href=&quot;https://www.pico-8.com&quot;&gt;PICO-8&lt;/a&gt; family! A free, web-based, account-less version of the console making it a more accessible way to learn how to program, push pixels and write chip tunes. It comes with a fully functional set of cartridge editing tools, and can load and save .p8 and .p8.png files to and from your local drive (as well as storing them to a temporary filesystem in the browser's cache).&lt;/p&gt;
+&lt;hr /&gt;
+&lt;p&gt;Just run it from any browser that has a keyboard + mouse attached:&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://www.pico-8-edu.com&quot;&gt;www.pico-8-edu.com&lt;/a&gt;&lt;/p&gt;
+&lt;hr /&gt;
+&lt;p&gt;If you are new to &lt;a href=&quot;https://www.pico-8-com&quot;&gt;PICO-8&lt;/a&gt; you can find a &lt;a href=&quot;https://www.lexaloffle.com/pico-8.php?page=resources&quot;&gt;manual and tutorials&lt;/a&gt; on the &lt;a href=&quot;https://www.pico-8.com&quot;&gt;main site&lt;/a&gt;, or click on the blue bunny for some tips. Here's a 2-minute GIF showing the creaton of a simple PICO-8 cartridge from scatch:&lt;/p&gt;
+&lt;img loading=&quot;lazy&quot; style=&quot;margin-bottom:16px&quot; border=0 src=&quot;/media/1/duck_dance.gif&quot; width=256 height=256 alt=&quot;&quot; /&gt;
+&lt;p&gt;In addition to the standard 32k .p8.png cartridges, PICO-8 Education Edition also comes with a new cartridge format: the URL CARTRIDGE. GFX and CODE can be encoded as a URL string, as long as it fits within 2040 characters. Here's one I prepared earlier:&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://bit.ly/3uWP0YF&quot;&gt;URL CART DEMO&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;// EDIT: changed to a bit.ly url so that the BBS doesn't munge it!&lt;/p&gt;
+&lt;p&gt;To generate a url cartridge, use &lt;code&gt;SAVE @URL&lt;/code&gt; and you should see the address bar change. I'm hoping this will make it easier to pass snippets around, and will add a new dimension to code size golfing and &lt;a href=&quot;https://twitter.com/search?q=%23tweetcart&amp;amp;amp;src=typed_query&quot;&gt;tweetcart&lt;/a&gt;'ing. And of course, it is still possible to capture screenshots (ctrl-6) and gifs (ctrl-8, ctrl-9).&lt;/p&gt;
+&lt;p&gt;Although exporters and SPLORE (the built-in cartridge browser) are not included, larger cartridges can also be shared either as .p8.png files or by first uploading to the &lt;a href=&quot;https://www.lexaloffle.com/bbs/?cat=7&quot;&gt;BBS&lt;/a&gt; as usual (publicly listed or semi-private) and then giving students the cartridge id to load directly from their machine:&lt;/p&gt;
+&lt;div&gt;
+				&lt;div class=scrollable_with_touch style=&quot;width:100%; max-width:800px; overflow:auto; margin-bottom:12px&quot;&gt;
+				&lt;table style=&quot;width:100%&quot; cellspacing=0 cellpadding=0&gt;
+				&lt;tr&gt;&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+				&lt;td background=/gfx/code_bg0.png&gt;
+				&lt;div style=&quot;font-family : courier; color: #000000; display:absolute; padding-left:10px;
+				padding-top:4px; padding-bottom:4px;
+				&quot;&gt;
+				&lt;pre&gt;LOAD #MY_TUTORIAL_ID&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;I hope you enjoy it, and I'll be back soon with some 0.2.4c binaries to match the web version!&lt;/p&gt;
+&lt;p&gt;-- zep&lt;/p&gt;
+	</description>
+            <link>https://www.lexaloffle.com/bbs/?tid=47278</link>
+            <guid isPermaLink="true">https://www.lexaloffle.com/bbs/?tid=47278</guid>
+	<pubDate>Wed, 06 Apr 2022 20:21:33 UTC</pubDate>
+    </item>
+
+
+<item>
+            <title>PICO-8 0.2.4b</title>
+            <description>
+&lt;p&gt;Hi All&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://www.pico-8.com&quot;&gt;PICO-8&lt;/a&gt; 0.2.4b is now up on &lt;a href=&quot;https://www.lexaloffle.com/games.php?page=updates&quot;&gt;lexaloffle&lt;/a&gt;, &lt;a href=&quot;https://www.humblebundle.com/home/library&quot;&gt;Humble&lt;/a&gt;, &lt;a href=&quot;https://lexaloffle.itch.io/pico-8&quot;&gt;itch.io&lt;/a&gt;, and for &lt;a href=&quot;https://lexaloffle.com/bbs/?tid=34009&quot;&gt;PocketCHIP&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;This is mostly a bug-fixing update; you can see the main 0.2.4 change notes in the &lt;a href=&quot;https://www.lexaloffle.com/bbs/?tid=45538&quot;&gt;0.2.4 thread&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;There are a few handy editor features though; here's a demo of setting animation loops: press l to start and end, and then -,+ or q,w or a,z (for azerty keyboards) to switch frames. This also works at different sprite selection sizes (shift-click and drag a selection from the spritesheet). This gif also shows using ctrl-b to &amp;quot;paste big&amp;quot; multiple times.&lt;/p&gt;
+&lt;img loading=&quot;lazy&quot; style=&quot;margin-bottom:16px&quot; border=0 src=&quot;/media/1/jelpi_anim_demo3.gif&quot; alt=&quot;&quot; /&gt;
+&lt;p&gt;Full 0.2.4b changelog:&lt;/p&gt;
+&lt;p&gt;Added: l in sprite sheet navigator to set loop start / end points (then q,w or a,z to navigate)&lt;br /&gt;
+Added: ctrl-b in gfx editor to paste 2x2 original size (&amp;quot;paste big&amp;quot;)&lt;br /&gt;
+Added: DEL / backspace to clear selected region in gfx / map editors, and ctrl-x to cut&lt;br /&gt;
+Added: aggressive_backups option in config.txt (off by default)&lt;br /&gt;
+Added: transform_screen in config.txt to globally rotate / flip the video output&lt;br /&gt;
+Added: stat(57) (boolean) true when music triggered by music() is playing or about to start&lt;br /&gt;
+Changed: memset() faster than using peek4/poke4; now 2 cycles per byte at 8MHz (was 4)&lt;br /&gt;
+Changed: &amp;quot;running at &amp;lt; 30fps&amp;quot; warning on boot now only for raspi builds, and w/ higher tolerance&lt;br /&gt;
+Changed: Controller inputs are accepted even when PICO-8 is not the foreground application&lt;br /&gt;
+Changed: Map can be located at 0x1000 .. 0x2f00 using poke(0x5f56, 0x10) .. poke(0x5f56,0x2f)&lt;br /&gt;
+Changed: Dotty text mode is now &amp;quot;\^=&amp;quot; (&amp;quot;Stripey&amp;quot;) instead of &amp;quot;\^.&amp;quot; // #gunayawuho #klax #impossible&lt;br /&gt;
+Fixed: (not confirmed) crash causing 0-byte .p8 when audio mixer is called during save / run&lt;br /&gt;
+Fixed: preprocessor not counting comments as white space; should allow: &amp;quot;.. end--[[]]if ..&amp;quot;&lt;br /&gt;
+Fixed: pal(nil) behaving the same way as pal(0); should be same as pal() // broke #rtype-2&lt;br /&gt;
+Fixed: note entry in sfx tracker is silent after running cartridge until pressing space to playback&lt;br /&gt;
+Fixed: sub(&amp;quot;abc&amp;quot;, 4, 4) returns &amp;quot;c&amp;quot; (regression in 0.2.4)&lt;br /&gt;
+Fixed: SPLORE cart update prompt does not appear when server replies too quickly (race condition)&lt;br /&gt;
+Fixed: SPLORE cart update prompt only checks version once per session (can't refresh until it shows up)&lt;br /&gt;
+Fixed: EXPORT command does not flatten includes when exporting to .p8.png / .p8.rom format&lt;br /&gt;
+Fixed: EXPORT command discards source code changes since last run or load&lt;br /&gt;
+Fixed: printing a one-off glyph using &amp;quot;\^.&amp;quot; terminates the whole string when last byte is a zero&lt;br /&gt;
+Fixed: Crash when loading a cart with fewer tabs, then creating a new tab and pasting.&lt;br /&gt;
+Fixed: . command runs at 30fps even for a 60fps cart (-&amp;gt; _update60 is called twice, _draw once)&lt;br /&gt;
+Fixed: Custom menu items become broken after suspending a cart, entering a lua command, and then resuming&lt;br /&gt;
+Fixed: memset() with a non-zero value in shared memory region (0x1000..0x1fff) causes garbage corresponding mget() values&lt;br /&gt;
+Fixed: web player/exports: ctrl-r causes erroneous &amp;quot;external changes reloaded&amp;quot; message and code corruption&lt;/p&gt;
+	</description>
+            <link>https://www.lexaloffle.com/bbs/?tid=46333</link>
+            <guid isPermaLink="true">https://www.lexaloffle.com/bbs/?tid=46333</guid>
+	<pubDate>Thu, 27 Jan 2022 21:01:24 UTC</pubDate>
+    </item>
+
+
+<item>
+            <title>Holiday Jumper</title>
+            <description>
+&lt;p&gt;
+			&lt;table&gt;&lt;tr&gt;&lt;td&gt;
+			&lt;a href=&quot;/bbs/?pid=103519#p&quot;&gt;
+			&lt;img src=&quot;/bbs/thumbs/pico8_jumper-3.png&quot; style=&quot;height:256px&quot;&gt;&lt;/a&gt;
+			&lt;/td&gt;&lt;td width=10&gt;&lt;/td&gt;&lt;td valign=top&gt;
+			&lt;a href=&quot;/bbs/?pid=103519#p&quot;&gt;
+			Holiday Jumper&lt;/a&gt;&lt;br&gt;&lt;br&gt;
+			by &lt;a href=&quot;/bbs/?uid=1&quot;&gt;
+			zep&lt;/a&gt;
+			&lt;br&gt;&lt;br&gt;&lt;br&gt;
+			&lt;a href=&quot;/bbs/?pid=103519#p&quot;&gt;
+			[Click to Play]&lt;/a&gt;
+			&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+		&lt;/p&gt;
+&lt;p&gt;Happy Holidays, everyone! This cartridge is my addition to the &lt;a href=&quot;https://www.lexaloffle.com/bbs/?tid=45525&quot;&gt;2021 PICO-8 Advent Calendar&lt;/a&gt;, which you should also check out if you haven't already!&lt;/p&gt;
+&lt;img loading=&quot;lazy&quot; style=&quot;margin-bottom:16px&quot; border=0 src=&quot;/media/1/holiday jumper_0.gif&quot; alt=&quot;&quot; /&gt;
+&lt;h3&gt;Controls&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;LEFT/RIGHT: Slow down or speed up. It is vital to get the right speed for some jumps&lt;/li&gt;
+&lt;li&gt;O (Z/C): Jump. You can get more height by going fast and/or holding the button longer.&lt;/li&gt;
+&lt;li&gt;X: To restart after crashing.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;This game gets reasonably tricky; especially from level 3. But if you can reach the end, you'll get a simple ending along with your total time and number of restarts. The randomish elements in the game (you'll see what I mean) are actually deterministic, so it's possible to form strategies and optimise your time, if that's your cup of tea.&lt;/p&gt;
+&lt;p&gt;Anyway, I hope you enjoy it even if only as a crashing-into-trees simulator.&lt;/p&gt;
+&lt;p&gt;This cartridge was heavily inspired by &lt;a href=&quot;https://en.wikipedia.org/wiki/SkyRoads_(video_game)&quot;&gt;Skyroads&lt;/a&gt; and &lt;a href=&quot;https://www.lexaloffle.com/bbs/?uid=26764&quot;&gt; @jackson_allen&lt;/a&gt;'s most excellent &lt;a href=&quot;https://www.lexaloffle.com/bbs/?tid=30417&quot;&gt;Christmas Sweater Generator&lt;/a&gt;&lt;/p&gt;
+&lt;img loading=&quot;lazy&quot; style=&quot;margin-bottom:16px&quot; border=0 src=&quot;/media/1/christmas sweater generator 1 0_0.gif&quot; alt=&quot;&quot; /&gt;
+	</description>
+            <link>https://www.lexaloffle.com/bbs/?tid=45856</link>
+            <guid isPermaLink="true">https://www.lexaloffle.com/bbs/?tid=45856</guid>
+	<pubDate>Sat, 25 Dec 2021 11:36:42 UTC</pubDate>
+    </item>
+
+
+<item>
+            <title>PICO-8 0.2.4</title>
+            <description>
+&lt;img loading=&quot;lazy&quot; style=&quot;margin-bottom:16px&quot; border=0 src=&quot;/media/1/fireflies_024.gif&quot; width=512 height=512 alt=&quot;&quot; /&gt;
+&lt;p&gt;&lt;a href=&quot;https://www.pico-8.com&quot;&gt;PICO-8&lt;/a&gt; 0.2.4 is now up on &lt;a href=&quot;https://www.lexaloffle.com/games.php?page=updates&quot;&gt;lexaloffle&lt;/a&gt;, &lt;a href=&quot;https://www.humblebundle.com/home/library&quot;&gt;Humble&lt;/a&gt;, &lt;a href=&quot;https://lexaloffle.itch.io/pico-8&quot;&gt;itch.io&lt;/a&gt;, and for &lt;a href=&quot;https://lexaloffle.com/bbs/?tid=34009&quot;&gt;PocketCHIP&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;This update is another attempt at freezing the API before the last feature update (0.3 -- high scores), but let's see how it goes! 0.2.4 also includes an important security update (see below for details), so please do consider updating. Cartridges posted after this release post will only be visible from SPLORE when running 0.2.4 or later.&lt;/p&gt;
+&lt;h2&gt;64k RAM&lt;/h2&gt;
+&lt;p&gt;64K of Base RAM is now enabled by default. In 0.2.4 it is safe to PEEK/POKE/MEMCPY memory 0x8000 and above (i.e. -0x8000 .. -1) without setting the hardware extension bit at 0x5f36.&lt;/p&gt;
+&lt;p&gt;Because PICO-8's numbers only cover 0xFFFF, this means it is impossible to poke or memcpy out of range. The original motivation for having 32k by default was to give new programmers some concept of illegal memory operations, and as an extra form of feedback when code isn't working as expected. But over time, these reasons haven't proved as useful as the benefits of allowing 64k by default. Additionally, 0.2.4 introduces the first feature that explicitly uses the upper 32k section (see Big Maps).&lt;/p&gt;
+&lt;h2&gt;Video Remapping&lt;/h2&gt;
+&lt;p&gt;The video memory sections can now be mapped to each other, allowing the screen to be used as if it were the spritesheet, and/or to draw to the spritesheet as if it were the screen.&lt;/p&gt;
+&lt;p&gt;The mapped address for the spritesheet is stored at 0x5f54, and the mapped address for the screen is stored at 0x5f55. There are only 2 legal values that should be poked to each address: 0x00 (which means map to 0x0000), and 0x60 (map to 0x6000). This gives 4 combinations:&lt;/p&gt;
+&lt;div&gt;
+				&lt;div class=scrollable_with_touch style=&quot;width:100%; max-width:800px; overflow:auto; margin-bottom:12px&quot;&gt;
+				&lt;table style=&quot;width:100%&quot; cellspacing=0 cellpadding=0&gt;
+				&lt;tr&gt;&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+				&lt;td background=/gfx/code_bg0.png&gt;
+				&lt;div style=&quot;font-family : courier; color: #000000; display:absolute; padding-left:10px;
+				padding-top:4px; padding-bottom:4px;
+				&quot;&gt;
+				&lt;pre&gt;0x00, 0x60: default settings
+0x60, 0x60: gfx functions (spr, circ..) use the screen as sprite data
+0x00, 0x00: gfx functions all draw directly into the spritesheet
+0x60, 0x00: swap spritesheet and screen&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;Here's an example of re-colouring and zooming a section of the screen, pasted in at the end of jelpi.p8's _draw() function. This was possible in earlier versions, but required a lot of memcpy()'ing to backup, use and then restore contents of the spritesheet:&lt;/p&gt;
+&lt;div&gt;
+				&lt;div class=scrollable_with_touch style=&quot;width:100%; max-width:800px; overflow:auto; margin-bottom:12px&quot;&gt;
+				&lt;table style=&quot;width:100%&quot; cellspacing=0 cellpadding=0&gt;
+				&lt;tr&gt;&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+				&lt;td background=/gfx/code_bg0.png&gt;
+				&lt;div style=&quot;font-family : courier; color: #000000; display:absolute; padding-left:10px;
+				padding-top:4px; padding-bottom:4px;
+				&quot;&gt;
+				&lt;pre&gt;-- lighter colours; no transparency
+pal({[0]=1,5,13,13, 9,13,7,7, 14,10,15,11, 6,6,15,15})
+palt(0)
+
+-- set the screen memory as the spritesheet
+-- and stretch screen-&amp;gt;screen
+poke(0x5f54, 0x60) 
+sspr(48,80,32,32, 32,32,64,64) 
+poke(0x5f54, 0x00) pal() -- return to defaults&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;img loading=&quot;lazy&quot; style=&quot;margin-bottom:16px&quot; border=0 src=&quot;/media/1/jasper_remapped.gif&quot; alt=&quot;&quot; /&gt;
+&lt;h2&gt;Big Maps&lt;/h2&gt;
+&lt;p&gt;Similar to gfx memory mapping, the map can now be placed at address 0x8000 and above (in increments of 0x100). This gives 4 times as much runtime space as the default map, and an additional POKE is provided to allow customisable map sizes.&lt;/p&gt;
+&lt;p&gt;Legal values are 0x20 (the default) and 0x80 and above. There are two pokes you need:&lt;/p&gt;
+&lt;div&gt;
+				&lt;div class=scrollable_with_touch style=&quot;width:100%; max-width:800px; overflow:auto; margin-bottom:12px&quot;&gt;
+				&lt;table style=&quot;width:100%&quot; cellspacing=0 cellpadding=0&gt;
+				&lt;tr&gt;&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+				&lt;td background=/gfx/code_bg0.png&gt;
+				&lt;div style=&quot;font-family : courier; color: #000000; display:absolute; padding-left:10px;
+				padding-top:4px; padding-bottom:4px;
+				&quot;&gt;
+				&lt;pre&gt;poke(0x5f56, 0x80) -- set the map to 0x80. Default is 0x20
+poke(0x5f57, 0)    -- set the width of the map (0 means 256). Defaults to 128&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;The height of the map is determined by how much data is available in the memory section. So in this case, there is is 32k available divided by 256, which gives a map height of 128 cels -&amp;gt; 256x128.&lt;/p&gt;
+&lt;p&gt;Note that the map editor still always writes and loads at 0x2000. This feature doesn't come with extra cartridge space to match! So to use 0x8000 and above, you'll need to manually mset() or memcpy() some map data. This feature will be most useful for carts that procedurally generate their maps or have some custom data storage scheme.&lt;/p&gt;
+&lt;p&gt;The map address is observed by all map functions: mget(), mset(), map(), tline()&lt;/p&gt;
+&lt;h2&gt;One-off Characters&lt;/h2&gt;
+&lt;p&gt;P8SCII character data can be specified and printed in-line using &amp;quot;\^.&amp;quot; followed by 8 bytes of raw binary data, or &amp;quot;\^:&amp;quot; followed by 8 2-digit hexadecimal values. The data format is the same as custom fonts; each byte specifies a row of 1-bit pixel values, with the low bit on the left.&lt;/p&gt;
+&lt;div&gt;
+				&lt;div class=scrollable_with_touch style=&quot;width:100%; max-width:800px; overflow:auto; margin-bottom:12px&quot;&gt;
+				&lt;table style=&quot;width:100%&quot; cellspacing=0 cellpadding=0&gt;
+				&lt;tr&gt;&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+				&lt;td background=/gfx/code_bg0.png&gt;
+				&lt;div style=&quot;font-family : courier; color: #000000; display:absolute; padding-left:10px;
+				padding-top:4px; padding-bottom:4px;
+				&quot;&gt;
+				&lt;pre&gt;?&amp;quot;\^.$|へ|&amp;gt;○&amp;sup1;⁶&amp;quot;
+?&amp;quot;\^:247cb67c3e7f0106&amp;quot;
+&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;img loading=&quot;lazy&quot; style=&quot;margin-bottom:16px&quot; border=0 src=&quot;/media/1/one_off_char_3.png&quot; alt=&quot;&quot; /&gt;
+&lt;h2&gt;Audio Sync&lt;/h2&gt;
+&lt;p&gt;STAT(46)..STAT(56) can be used instead of STAT(16)..STAT(26) to query the state of the sound system with more precision. Although there are many carts that managed fine with the old STAT() calls, it required a bit of fiddling and data smoothing to get right, derived from whatever state the mixer is in at the start of each frame (which only changes ~20 times a second, depending on the host platform and phase of the moon).&lt;/p&gt;
+&lt;p&gt;The new version (STAT 46..56) works by storing a history of sound mixer states at each tick, along with timestamps for sound driver mix requests, to estimate which state snapshot is currently audible at any moment in time. It's still not perfect, but requires less to work to get pretty good sync going.&lt;/p&gt;
+&lt;p&gt;Test cart: LOAD #AUDIO_SYNC_TEST&lt;/p&gt;
+&lt;h2&gt;API Changes&lt;/h2&gt;
+&lt;p&gt;Some small conveniences:&lt;/p&gt;
+&lt;p&gt;CHR() can now take multiple arguments to build a string:&lt;/p&gt;
+&lt;div&gt;
+				&lt;div class=scrollable_with_touch style=&quot;width:100%; max-width:800px; overflow:auto; margin-bottom:12px&quot;&gt;
+				&lt;table style=&quot;width:100%&quot; cellspacing=0 cellpadding=0&gt;
+				&lt;tr&gt;&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+				&lt;td background=/gfx/code_bg0.png&gt;
+				&lt;div style=&quot;font-family : courier; color: #000000; display:absolute; padding-left:10px;
+				padding-top:4px; padding-bottom:4px;
+				&quot;&gt;
+				&lt;pre&gt;&amp;gt; ?chr(104,101,108,108,111)
+hello&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;SUB() can take nil or _ as the last argument to return a single character (instead of the rest of the string). This is useful when the second parameter (the index) is some long expression that you don't really want to repeat in the last parameter, or go to the trouble of assigning a temporary variable to.&lt;/p&gt;
+&lt;p&gt;PAL(N) can be used to reset one of the three palettes to their default state (0 draw palette, 1 display palette, 2 secondary palette).&lt;/p&gt;
+&lt;div&gt;
+				&lt;div class=scrollable_with_touch style=&quot;width:100%; max-width:800px; overflow:auto; margin-bottom:12px&quot;&gt;
+				&lt;table style=&quot;width:100%&quot; cellspacing=0 cellpadding=0&gt;
+				&lt;tr&gt;&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+				&lt;td background=/gfx/code_bg0.png&gt;
+				&lt;div style=&quot;font-family : courier; color: #000000; display:absolute; padding-left:10px;
+				padding-top:4px; padding-bottom:4px;
+				&quot;&gt;
+				&lt;pre&gt;&amp;gt; sub(&amp;quot;hello&amp;quot;, 3, _)
+l
+&amp;gt; sub(&amp;quot;hello&amp;quot;, 3)
+llo&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h2&gt;Cartridge Formats&lt;/h2&gt;
+&lt;p&gt;The .rom.p8 format (a raw 32k block of cart data) can now be used by CSTORE(), RELOAD() and in multicarts. This should make it easier to generate cartridge data using external tools without needing to jump through the hoops of writing to .p8 / .p8.png format.&lt;/p&gt;
+&lt;p&gt;On a related note, the EXPORT command can now also be used with any cartridge format. So, to convert between cartridge formats from commandline, the -export switch can be used (&lt;code&gt;pico8 foo.p8.png -export foo2.p8.png&lt;/code&gt;). From inside PICO-8, it is also a handy way to save a copy of the current working cartridge without altering the current working filename:&lt;/p&gt;
+&lt;div&gt;
+				&lt;div class=scrollable_with_touch style=&quot;width:100%; max-width:800px; overflow:auto; margin-bottom:12px&quot;&gt;
+				&lt;table style=&quot;width:100%&quot; cellspacing=0 cellpadding=0&gt;
+				&lt;tr&gt;&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+				&lt;td background=/gfx/code_bg0.png&gt;
+				&lt;div style=&quot;font-family : courier; color: #000000; display:absolute; padding-left:10px;
+				padding-top:4px; padding-bottom:4px;
+				&quot;&gt;
+				&lt;pre&gt;&amp;gt; EXPORT COPY_TO_UPLOAD_TO_BBS.P8.PNG&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h2&gt;64-bit Raspberry Pi Builds&lt;/h2&gt;
+&lt;p&gt;The file archive ending _raspi.zip now includes a build for the 64-bit version of Raspberry Pi OS called pico8_64. Exported binaries also have a matching file (e.g. mygame_64).&lt;/p&gt;
+&lt;h2&gt;Security Patch&lt;/h2&gt;
+&lt;p&gt;PICO-8 0.2.3 had quite a serious security flaw affecting Mac OS and Linux machines, that allow arbitrary commands to be injected into LOAD(&amp;quot;#...&amp;quot;) calls and executed on the host machine with the same privileges as PICO-8. PICO-8 0.2.4 fixes this in two places: the illegal cartridge ID is not allowed to be processed in the first place, and the URL used to fetch cartridges / listings is only allowed to contain a limited subset of characters. Earlier versions only had the second check, which was faulty.&lt;/p&gt;
+&lt;p&gt;As far as I can tell, there are no BBS cartridges that have used this exploit, and as a precaution SPLORE will no longer allow cartridges newer than this post to be listed to older versions of PICO-8.&lt;/p&gt;
+&lt;p&gt;So please do update to 0.2.4 to ensure you are not affected by this vulnerability, including for cartridges obtained from somewhere outside of SPLORE.&lt;/p&gt;
+&lt;h2&gt;Server Test: Doodlemud&lt;/h2&gt;
+&lt;p&gt;The last remaining part of PICO-8's api is SCORESUB() -- a simple api function for submitting highscores, but with some internal complexity. I've set up some new infrastructure for this to be reasonably future-proof and scalable, and a simple game for battle-testing it. You can try it here:&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://www.doodlemud.com/#p8024&quot;&gt;https://www.doodlemud.com/#p8024&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;Doodlemud is a multiplayer world-building / exploration game where each player can switch between drawing each room and being a player in it. This test requires a keyboard and mouse (no touch / tablet support); press cursors to move around, and G to toggle gravity for everyone in that room. Feel free to change the url to start new empty worlds (any alphanumeric name after the hash is ok), but keep in mind that it is experimental, and all of the data will be erased when it gets updated!&lt;/p&gt;
+&lt;h2&gt;ASCII Manual&lt;/h2&gt;
+&lt;p&gt;The .txt version of the manual is back! It is included in the archives, and you can find it on the &lt;a href=&quot;https://www.lexaloffle.com/pico-8.php?page=resources&quot;&gt;Resources Page&lt;/a&gt;. The text and html versions of the manual are now both generated from the same source file, so should always be in sync.&lt;/p&gt;
+&lt;h2&gt;Changelog&lt;/h2&gt;
+&lt;p&gt;You can find the full changelog here:&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://www.lexaloffle.com/dl/docs/pico-8_changelog.txt&quot;&gt;https://www.lexaloffle.com/dl/docs/pico-8_changelog.txt&lt;/a&gt;&lt;/p&gt;
+	</description>
+            <link>https://www.lexaloffle.com/bbs/?tid=45538</link>
+            <guid isPermaLink="true">https://www.lexaloffle.com/bbs/?tid=45538</guid>
+	<pubDate>Fri, 03 Dec 2021 07:22:25 UTC</pubDate>
+    </item>
+
+
+<item>
+            <title>Squiddy (PICO-1k Jam)</title>
+            <description>
+&lt;img loading=&quot;lazy&quot; style=&quot;margin-bottom:16px&quot; border=0 src=&quot;/media/1/sq_header.png&quot; alt=&quot;&quot; /&gt;
+&lt;p&gt;
+			&lt;table&gt;&lt;tr&gt;&lt;td&gt;
+			&lt;a href=&quot;/bbs/?pid=98017#p&quot;&gt;
+			&lt;img src=&quot;/bbs/thumbs/pico8_squiddy-0.png&quot; style=&quot;height:256px&quot;&gt;&lt;/a&gt;
+			&lt;/td&gt;&lt;td width=10&gt;&lt;/td&gt;&lt;td valign=top&gt;
+			&lt;a href=&quot;/bbs/?pid=98017#p&quot;&gt;
+			squiddy (1k jam)&lt;/a&gt;&lt;br&gt;&lt;br&gt;
+			by &lt;a href=&quot;/bbs/?uid=1&quot;&gt;
+			zep&lt;/a&gt;
+			&lt;br&gt;&lt;br&gt;&lt;br&gt;
+			&lt;a href=&quot;/bbs/?pid=98017#p&quot;&gt;
+			[Click to Play]&lt;/a&gt;
+			&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+		&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;/media/1/sq_cover.png&quot;&gt;&lt;img loading=&quot;lazy&quot; style=&quot;margin-bottom:16px&quot; border=0 src=&quot;/media/1/sq_cover.png&quot; width=340 height= 340 alt=&quot;&quot; /&gt;&lt;/a&gt;&lt;a href=&quot;/media/1/squiddy_instructions.jpeg&quot;&gt;&lt;img loading=&quot;lazy&quot; style=&quot;margin-bottom:16px&quot; border=0 src=&quot;/media/1/squiddy_instructions.jpeg&quot; width=340 height= 340 alt=&quot;&quot; /&gt;&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;(click to expand)&lt;/p&gt;
+&lt;p&gt;Heeey, it's Squiddy! This is a game made in 1017 bytes for &lt;a href=&quot;https://itch.io/jam/pico-1k&quot;&gt;PICO-1k Jam&lt;/a&gt;, co-designed and pixelled by &lt;a href=&quot;https://www.lexaloffle.com/bbs/?uid=11378&quot;&gt; @castpixel&lt;/a&gt; (&lt;a href=&quot;https://twitter.com/castpixel&quot;&gt;twitter&lt;/a&gt;). This is our second production as pod; you can find the first one &lt;a href=&quot;https://www.lexaloffle.com/bbs/?pid=76564&quot;&gt;here&lt;/a&gt;. Squiddy is also up on &lt;a href=&quot;https://castpixel.itch.io/squiddy&quot;&gt;itch&lt;/a&gt;.&lt;/p&gt;
+&lt;h2&gt;Technical Details&lt;/h2&gt;
+&lt;p&gt;1024 bytes is an interesting size limit for a game; it's large enough to try for some relatively detailed game logic or visuals, but small enough that you need to execute some weird programming tricks and design pivots to get everything to fit. If you found this post because you heard that PICO-8 is a nice introduction to game programming, I apologize for the following code snippets! First up, here is the full source code for the game that includes the graphics and map data. It can be pasted into PICO-8 0.2.3 or later:&lt;/p&gt;
+&lt;div&gt;
+				&lt;div class=scrollable_with_touch style=&quot;width:100%; max-width:800px; overflow:auto; margin-bottom:12px&quot;&gt;
+				&lt;table style=&quot;width:100%&quot; cellspacing=0 cellpadding=0&gt;
+				&lt;tr&gt;&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+				&lt;td background=/gfx/code_bg0.png&gt;
+				&lt;div style=&quot;font-family : courier; color: #000000; display:absolute; padding-left:10px;
+				padding-top:4px; padding-bottom:4px;
+				&quot;&gt;
+				&lt;pre&gt;➡️=0t=8⬇️=7for x=0,3800do
+➡️-=1if(➡️&amp;lt;1)➡️=2r=3⬇️=7-⬇️ while r&amp;gt;2do r=ord(&amp;quot;○ュ?\0゜ョヤャ◝◝⁷ツん&amp;sup1;ュ=◝に◝+ンョャヤ○る&amp;sup3;ユ\n &amp;lt;◝エ𝘤ムもにュよ◝トラ⁙⁴よ░&amp;sup2;リムリᵇ&amp;sup3;ト■𝘨○ワ;◝エらョ0\0pクシチ◜◝=ュoれ/ウワ◝モャいユ𝘪ゆ?=0◝cりdオトは⁷ト?⁵\0𝘴リ◆○☉6サ&amp;sup1;6ア?ュ◝❎。。ユユ◝ャヤ2v\0q○&amp;sup1;\0ワw3v\0001よ&amp;sup1;\0◝?𝘰v⁴ャ゜⁴ら█pタp⁵ュ?オ; &amp;lt;○○ヨ◝oに◝𝘰ュ?1░ろヲア◝ᵇp○\0s&amp;sup3;ヲュひ\0|れツ◝リツ𝘰゜6ト⁴ュ?p◜◝モpᶜオん▶○◜ャ\r○𝘣◝▶トリに1◝⁷ョ_ンん゜ョょ737⬇️○ョ&amp;sup1;ュのら◜-エs○ユト⁴らメ\0&amp;sup3;&amp;bull;~◝エろヨ/゜3\0な?𝘯ュ◝よ▮ラヨsクろ?リトンミエセろ⁵ᵇムり3オ◝𝘮rユ⁷ワ&amp;gt;pンᶠ゜シてン&amp;gt;ナレ◝𝘰⁙ュuワ◝シ◝1゛ュ4チ◝?◝◝𝘰\0゜ᵇユ◝エ◝4◀0○ ◝◝◝◝◝\0ら𝘬\0&amp;quot;,t\8)&amp;gt;&amp;gt;t%8&amp;amp;3t+=2➡️+=r end
+sset(x%95,x\95,⬇️)end
+o=128w=256f=0r=4128🐱=cos ➡️=0
+❎=64🅾️=r*2s=spr::_::t+=.03camera(❎,🅾️)map()v=0for i=0,t/2do
+x=i\32y=i%32v/=2v+=sget(r%o+x/4,r\o+y/4-🐱(i/870)/2)&amp;amp;4mset(x,y,v)p=i%4y=i\4*5%31
+if(mget(x,y+1)==4)s(0,x*8+🐱(p/4-t),y*8-p*4)
+if(r%5==2and i&amp;lt;o)s(i&amp;amp;2,-t*i%w,i*i%w+🐱(i/9+t)*3)➡️-=1&amp;gt;&amp;gt;12
+end
+if(r==4136)s(8,92,112,5,5)
+s(20,o+🐱(t/2)*9,90+r+🐱(t)*5,1.5,2)b=btn()n=b&amp;amp;32f=f/2+n/20k=b%4\2-b%2if(f&amp;gt;n)➡️+=f*k ⬇️-=f f=0
+❎+=➡️ 🅾️+=⬇️ ➡️=-➡️ ⬇️=-⬇️?&amp;quot;ᶜe\^wfin &amp;hearts;&amp;quot;,108,60+r
+if(mget(❎/4,🅾️/4)&amp;lt;1)➡️*=-.95⬇️=.05-⬇️*.9
+r+=(❎\o+🅾️\o*o)*8❎%=o 🅾️%=o
+s(16+(f&amp;amp;2)+k%2*32,❎*2-8,🅾️*2-8,2,2,k&amp;lt;0)?&amp;quot;⁶1⁶c&amp;quot;
+goto _&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h2&gt;Sprite Storage&lt;/h2&gt;
+&lt;p&gt;Here's the 95x40 spritesheet (hidden for spoilers).&lt;/p&gt;
+&lt;p&gt;&lt;div&gt;&lt;div&gt;&lt;input type=&quot;button&quot; value=&quot; Show &quot; onClick=&quot;if (this.parentNode.parentNode.getElementsByTagName('div')[1].getElementsByTagName('div')[0].style.display != '') { this.parentNode.parentNode.getElementsByTagName('div')[1].getElementsByTagName('div')[0].style.display = '';		this.innerText = ''; this.value = ' Hide '; } else { this.parentNode.parentNode.getElementsByTagName('div')[1].getElementsByTagName('div')[0].style.display = 'none'; this.innerText = ''; this.value = ' Show '; }&quot;&gt;&lt;/div&gt;&lt;div&gt;&lt;div style=&quot;display: none;&quot;&gt;&lt;/p&gt;
+&lt;img loading=&quot;lazy&quot; style=&quot;margin-bottom:16px&quot; border=0 src=&quot;/media/1/nop8_ss.png&quot; alt=&quot;&quot; /&gt;
+&lt;p&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;/p&gt;
+&lt;p&gt;The sprites and map data is stored in the long string passed to the ord() function. The challenge was to compress the data in a way that the decoder + compressed data would be smaller than the raw uncompressed sprite data. This is hard to do with a small amount of 1-bit graphics!&lt;/p&gt;
+&lt;p&gt;The format we settled on quite early is a variant of RLE (Runtime Length Encoding -- storing the lengths of spans of the same colour) with an interesting constraint: the smallest span length must be 2 pixels. This means that it is impossible to have a single-pixel vertical line, but thin horizontal lines are ok. It is also quite different from using double-width pixels, as spans can stop and start anywhere.&lt;/p&gt;
+&lt;p&gt;Each span length is stored as a sequence of 2-bit values. Each value is added to the span length, and the sequence is finished when the value is not 0b11 (3). This means that that 2-pixel spans take 2 bits to store (the worst case -- same as raw), 4-pixel spans also take 2 bits (the best case -- half the data needed), and for very long spans the data compresses to around 2/3 of the original size. The number of bits needs to store a span length jumps up every 3 values:&lt;/p&gt;
+&lt;div&gt;
+				&lt;div class=scrollable_with_touch style=&quot;width:100%; max-width:800px; overflow:auto; margin-bottom:12px&quot;&gt;
+				&lt;table style=&quot;width:100%&quot; cellspacing=0 cellpadding=0&gt;
+				&lt;tr&gt;&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+				&lt;td background=/gfx/code_bg0.png&gt;
+				&lt;div style=&quot;font-family : courier; color: #000000; display:absolute; padding-left:10px;
+				padding-top:4px; padding-bottom:4px;
+				&quot;&gt;
+				&lt;pre&gt;2 pixel span: 00
+3 pixel span: 01
+4 pixel span: 10
+5 pixel span: 11 00 &amp;lt;- 2 more bits because the first value is 0b11
+6 pixel span: 11 01
+7 pixel span: 11 10
+8 pixel span: 11 11 00
+...&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;The code for the decoder is 106 characters after re-using some game state variables, and the sprite data compresses to 340 bytes, which becomes 358 characters with the required escape codes to store it in the source code (e.g. value 0 becomes &amp;quot;\0&amp;quot;). This gives a total of 464 characters -- around 50 less than using raw data + some code to transfer it to the sprite sheet. Worth it!&lt;/p&gt;
+&lt;div&gt;
+				&lt;div class=scrollable_with_touch style=&quot;width:100%; max-width:800px; overflow:auto; margin-bottom:12px&quot;&gt;
+				&lt;table style=&quot;width:100%&quot; cellspacing=0 cellpadding=0&gt;
+				&lt;tr&gt;&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+				&lt;td background=/gfx/code_bg0.png&gt;
+				&lt;div style=&quot;font-family : courier; color: #000000; display:absolute; padding-left:10px;
+				padding-top:4px; padding-bottom:4px;
+				&quot;&gt;
+				&lt;pre&gt;-- decode sprite data
+
+v=0 -- last read 2-bit value
+l=0 -- length of span
+i=8 -- input data position in bits
+c=7 -- current span colour
+
+for x=0,3800 do -- for each spritesheet pixel
+
+  l-=1 -- one less pixel left to draw of the current span
+
+  -- read the next span length (l) if ran out of pixels to write
+  -- ord() grabs an 8-bit value from the data string
+
+  if(l&amp;lt;1) l=2 r=3 c=7-c while r&amp;gt;2 do r=ord(data_string,i\8)&amp;gt;&amp;gt;i%8&amp;amp;3 i+=2 l+=r end
+  pset(x%95,x\95,c) -- set a single pixel
+
+end&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h2&gt;Map Data&lt;/h2&gt;
+&lt;p&gt;The map is generated from sprite pixels: each pixel in the spritesheet corresponds to a 4x4 block of map tiles. This allows for a 2x2 screen room to be described by an 8x8 pixel sprite. This produces a very blocky world however, so the sampling position in the spritesheet is also distorted by a sine wave that is chosen to line up between neighboring rooms, so that it is not possible to enter the next room and already be inside a wall. Here is an example of a room without and with distortion:&lt;/p&gt;
+&lt;p&gt;&lt;img loading=&quot;lazy&quot; style=&quot;margin-bottom:16px&quot; border=0 src=&quot;/media/1/squiddy_5.png&quot; width=384 height=384 alt=&quot;&quot; /&gt;&lt;img loading=&quot;lazy&quot; style=&quot;margin-bottom:16px&quot; border=0 src=&quot;/media/1/squiddy_4.png&quot; width=384 height=384 alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;Apart from obscuring the coarse resolution of the source data, using this distortion had some other nice side-effects. It produces local organic details like a single protruding tile at the edge of some 4x4 clusters, and larger features like the raised 'platform' that the statue is sitting on. As the seaweed placement is based on both x and y position, having varying y positions for the ground blocks also means that the seaweed placement test could leverage that to look scattered without using an additional pseudo-random number expression.&lt;/p&gt;
+&lt;p&gt;It is also possible to reuse the structure of regular sprites (that are used as visible graphics) as map shapes. This only ended up happening once: the left side of the last tunnel is shared by the sprite data of the seahorse. But if you're really keen, you can also glitch through a wall to get out of bounds, and then freely explore the spritesheet.&lt;/p&gt;
+&lt;h2&gt;Superloop&lt;/h2&gt;
+&lt;p&gt;When making code-golfed games and tweetcarts, I normally end up having a single large loop that is used by anything that needs to be looped, to avoid the &amp;quot;FOR .. DO .. END&amp;quot; 16-character overhead. Unfortunately (or fortunately) I was unable to merge the sprite unpacking in this way, but the rest of the game uses a single superloop. The map data is fetched from the spritesheet, bubbles are drawn, and segments of seaweed are drawn at random top-of-ground locations, all using the same loop counter.&lt;/p&gt;
+&lt;div&gt;
+				&lt;div class=scrollable_with_touch style=&quot;width:100%; max-width:800px; overflow:auto; margin-bottom:12px&quot;&gt;
+				&lt;table style=&quot;width:100%&quot; cellspacing=0 cellpadding=0&gt;
+				&lt;tr&gt;&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+				&lt;td background=/gfx/code_bg0.png&gt;
+				&lt;div style=&quot;font-family : courier; color: #000000; display:absolute; padding-left:10px;
+				padding-top:4px; padding-bottom:4px;
+				&quot;&gt;
+				&lt;pre&gt;-- time starts around 2722, and t/2 is cheaper than writing a 4-digit number
+for i=0,t/2 do  
+
+  -- unpack map from the spritesheet in 4x4 map tiles
+  -- Using v = (sget() + v)/2 gives tile values that differ 
+  -- based on their vertical neighbour so that viable seaweed 
+  -- locations can be identified (top is always 4)
+
+  x=i\32y=i%32
+  v/=2
+  v+=sget(r%o+x/4,r\o+y/4-sin(i/870)/2)&amp;amp;4
+  mset(x,y,v)
+
+  -- seaweed
+  p=i%4 -- which segment of seaweed
+  y=i\4*5%31 -- y position of seaweed to test (unevenly scattered)
+  if(mget(x,y+1)==4)spr(0,x*8+sin(p/4-t),y*8-p*4)
+
+  -- draw bubbes and apply water current to player
+  -- only for 1/5 rooms, and for the first 128 iterations
+  if(r%5==2and i&amp;lt;128)spr(i&amp;amp;2,-t*i%w,i*i%w+cos(i/9+t)*3)player_dx-=1&amp;gt;&amp;gt;12
+  end&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h2&gt;Janky Physics&lt;/h2&gt;
+&lt;p&gt;The player uses a coordinate system (0..128 in each room) that is rigged so that the world position of the player is the same as the screen position after adjusting for camera position and scrolling. It also gives nice ranges of values that can be manipulated with expressions containing only small integer values.&lt;/p&gt;
+&lt;div&gt;
+				&lt;div class=scrollable_with_touch style=&quot;width:100%; max-width:800px; overflow:auto; margin-bottom:12px&quot;&gt;
+				&lt;table style=&quot;width:100%&quot; cellspacing=0 cellpadding=0&gt;
+				&lt;tr&gt;&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+				&lt;td background=/gfx/code_bg0.png&gt;
+				&lt;div style=&quot;font-family : courier; color: #000000; display:absolute; padding-left:10px;
+				padding-top:4px; padding-bottom:4px;
+				&quot;&gt;
+				&lt;pre&gt;-- control player
+-- accumulate force (f) while button X is held, and apply when released
+
+b=btn() n=b&amp;amp;32 -- buttons states
+f=f/2 + n/20   -- f approaches but does not exceed 3
+k=b%4\2-b%2    -- -1,1 when LEFT or RIGHT is pressed
+
+if(f&amp;gt;n) then
+  -- apply force and reset
+  player_dx += f*k 
+  player_dy-=f 
+  f=0  
+end
+
+-- add velocity to the player's position
+
+player_x += player_dx 
+player_y += player_dy 
+
+-- invert the velocity before map collision test so that
+-- bouncing, friction and gravity can all be applied when
+-- there is /not/ a collision. works out slightly shorter
+
+player_dx = -player_dx
+player_dy = -player_dy
+
+if (mget(player_x / 4, player_y / 4) &amp;lt; 1) then
+
+  -- no collision: invert the velocity to prevent bouncing,
+  -- and apply friction and gravity in the same expression
+
+  player_dx *= -.95 
+  player_dy = .05-player_dy*.9
+
+end&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h2&gt;Squiddy Racer&lt;/h2&gt;
+&lt;p&gt;Because there is only a single loop used to generate the map and to do things every frame, it means that map data is generated every frame. This is what it looks like if the map distortion accidentally has a time component given to the sine wave:&lt;/p&gt;
+&lt;img loading=&quot;lazy&quot; style=&quot;margin-bottom:16px&quot; border=0 src=&quot;/media/1/squiddy_racer.gif&quot; alt=&quot;&quot; /&gt;
+	</description>
+            <link>https://www.lexaloffle.com/bbs/?tid=44826</link>
+            <guid isPermaLink="true">https://www.lexaloffle.com/bbs/?tid=44826</guid>
+	<pubDate>Thu, 30 Sep 2021 01:22:49 UTC</pubDate>
+    </item>
+
+
+<item>
+            <title>PICO-8 0.2.3</title>
+            <description>
+&lt;p&gt;&lt;a href=&quot;https://www.pico-8.com&quot;&gt;PICO-8&lt;/a&gt; 0.2.3 is now up on &lt;a href=&quot;https://www.lexaloffle.com/games.php?page=updates&quot;&gt;lexaloffle&lt;/a&gt;, &lt;a href=&quot;https://www.humblebundle.com/home/library&quot;&gt;Humble&lt;/a&gt;, &lt;a href=&quot;https://lexaloffle.itch.io/pico-8&quot;&gt;itch.io&lt;/a&gt;, and for &lt;a href=&quot;https://lexaloffle.com/bbs/?tid=34009&quot;&gt;PocketCHIP&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;This update is focused on resolving runtime issues, with a couple of small but handy features thrown in for good measure:&lt;/p&gt;
+&lt;h2&gt;Lucky Draw&lt;/h2&gt;
+&lt;p&gt;To grab 32 random cartridges from the BBS, there is now a 'Lucky Draw' list in SPLORE. It is more likely to select cartridges that have more stars, but even unrated carts have a decent chance of appearing. Perhaps this will be a way to unearth some undiscovered gems, or just to find something new to play without scrolling back through several years of carts.&lt;/p&gt;
+&lt;img loading=&quot;lazy&quot; style=&quot;margin-bottom:16px&quot; border=0 src=&quot;/media/1/86_lucky_draw.gif&quot; alt=&quot;&quot; /&gt;
+&lt;p&gt;The list is cached, so it only changes every 2 minutes or so. But you can keep paging through the list to get new items forever.&lt;/p&gt;
+&lt;h2&gt;Live Token / Character Count&lt;/h2&gt;
+&lt;p&gt;Select some text in the code editor to view how many characters or tokens are contained within.&lt;/p&gt;
+&lt;img loading=&quot;lazy&quot; style=&quot;margin-bottom:16px&quot; border=0 src=&quot;/media/1/84_selected_tokens.png&quot; alt=&quot;&quot; /&gt;
+&lt;h2&gt;Shorthand Print Statements&lt;/h2&gt;
+&lt;p&gt;The shorthand version of print (?&amp;quot;hello&amp;quot;) used to require no preceding statement be on the same line, but you can now mix it with things like the shorthand IF statement, as long as it is the last thing on the line:&lt;/p&gt;
+&lt;div&gt;
+				&lt;div class=scrollable_with_touch style=&quot;width:100%; max-width:800px; overflow:auto; margin-bottom:12px&quot;&gt;
+				&lt;table style=&quot;width:100%&quot; cellspacing=0 cellpadding=0&gt;
+				&lt;tr&gt;&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+				&lt;td background=/gfx/code_bg0.png&gt;
+				&lt;div style=&quot;font-family : courier; color: #000000; display:absolute; padding-left:10px;
+				padding-top:4px; padding-bottom:4px;
+				&quot;&gt;
+				&lt;pre&gt;-- PLAY A SOUND EFFECT WHEN HIT
+IF (PGET(X,Y)&amp;gt;0) HIT=1 ?&amp;quot;\ADAF&amp;quot;&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;Thanks to &lt;a href=&quot;https://www.lexaloffle.com/bbs/?uid=13822&quot;&gt; @Liquidream&lt;/a&gt; for suggesting this. It should be handy for things like tweetcarts and &lt;a href=&quot;https://www.lexaloffle.com/bbs/?tid=44237&quot;&gt;PICO-1K Jam&lt;/a&gt; (which coincidentally is also organized by Liquidream!)&lt;/p&gt;
+&lt;h2&gt;New Manual&lt;/h2&gt;
+&lt;p&gt;&lt;a href=&quot;https://www.lexaloffle.com/dl/docs/pico-8_manual.html&quot;&gt;&lt;img loading=&quot;lazy&quot; style=&quot;margin-bottom:16px&quot; border=0 src=&quot;/gfx/pico8_manual_cover.png&quot; width=240 height=320 alt=&quot;&quot; /&gt;&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;The PICO-8 Manual is still a work in progress, but it went through a large update last month, with new formatting, dark mode, linkable headers, and more printer-friendly. You can find it on the resources page:&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://www.lexaloffle.com/pico-8.php?page=resources&quot;&gt;https://www.lexaloffle.com/pico-8.php?page=resources&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;The changelog has been separated into a text file here:&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://www.lexaloffle.com/dl/docs/pico-8_changelog.txt&quot;&gt;https://www.lexaloffle.com/dl/docs/pico-8_changelog.txt&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;The pico-8.txt included in the distributables has changed to a short version that links to the online manual, but later on I'll bring back the full ascii version and keep it in sync with the html version.&lt;/p&gt;
+&lt;h2&gt;.P8.ROM Format&lt;/h2&gt;
+&lt;p&gt;This isn't a very useful feature unless you are manipulating PICO-8 cartridges with external tools, but it has always irked me that it is not possible to write 32k of PICO-8 cartridge to a file that is 32k!&lt;/p&gt;
+&lt;div&gt;
+				&lt;div class=scrollable_with_touch style=&quot;width:100%; max-width:800px; overflow:auto; margin-bottom:12px&quot;&gt;
+				&lt;table style=&quot;width:100%&quot; cellspacing=0 cellpadding=0&gt;
+				&lt;tr&gt;&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+				&lt;td background=/gfx/code_bg0.png&gt;
+				&lt;div style=&quot;font-family : courier; color: #000000; display:absolute; padding-left:10px;
+				padding-top:4px; padding-bottom:4px;
+				&quot;&gt;
+				&lt;pre&gt;&amp;gt; SAVE FOO32K.P8.ROM
+SAVED FOO32K.P8.ROM
+&amp;gt; LOAD FOO32K.P8.ROM
+LOADED FOO32K.P8.ROM (0 CHARS)&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;Majestic.&lt;/p&gt;
+&lt;h2&gt;Large Numbers&lt;/h2&gt;
+&lt;p&gt;tostr() and tonum() now take format flags that make it easier to deal with large numbers.&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://www.lexaloffle.com/dl/docs/pico-8_manual.html#TOSTR&quot;&gt;https://www.lexaloffle.com/dl/docs/pico-8_manual.html#TOSTR&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;PICO-8's numbers are all 16:16 fixed point, which basically means that every number is internally stored as a large 32-bit integer that is divided by 65536 to get the value in Lua. So for example, if you want to use that large integer for something like scores that need to go above the usual maximum of 32767, bit 0x2 can be used to display it in the raw integer form:&lt;/p&gt;
+&lt;div&gt;
+				&lt;div class=scrollable_with_touch style=&quot;width:100%; max-width:800px; overflow:auto; margin-bottom:12px&quot;&gt;
+				&lt;table style=&quot;width:100%&quot; cellspacing=0 cellpadding=0&gt;
+				&lt;tr&gt;&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+				&lt;td background=/gfx/code_bg0.png&gt;
+				&lt;div style=&quot;font-family : courier; color: #000000; display:absolute; padding-left:10px;
+				padding-top:4px; padding-bottom:4px;
+				&quot;&gt;
+				&lt;pre&gt;?TOSTR(3, 0x2)
+196608
+?TONUM(&amp;quot;196608&amp;quot;, 0x2)
+3&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;To add 10 points to a score stored in this way, you'd need to shift it right 16 bits:&lt;/p&gt;
+&lt;div&gt;
+				&lt;div class=scrollable_with_touch style=&quot;width:100%; max-width:800px; overflow:auto; margin-bottom:12px&quot;&gt;
+				&lt;table style=&quot;width:100%&quot; cellspacing=0 cellpadding=0&gt;
+				&lt;tr&gt;&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+				&lt;td background=/gfx/code_bg0.png&gt;
+				&lt;div style=&quot;font-family : courier; color: #000000; display:absolute; padding-left:10px;
+				padding-top:4px; padding-bottom:4px;
+				&quot;&gt;
+				&lt;pre&gt;SCORE += 10&amp;gt;&amp;gt;16&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;td background=/gfx/code_bg1.png width=16&gt;&lt;div style=&quot;width:16px;display:block&quot;&gt;&lt;/div&gt;&lt;/td&gt;
+		 		&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h2&gt;CPU Counting&lt;/h2&gt;
+&lt;p&gt;0.2.3 contains two changed to cpu costs which does not effect many cartridges:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;In 0.2.2c, it was cheaper to write &amp;quot;local a=0+b&amp;quot; than &amp;quot;local a=b&amp;quot; and also &amp;quot;local a=0-b&amp;quot; than &amp;quot;local a=-b&amp;quot;. This is because the Lua vm instruction for addition was cheaper than local assignment (OP_MOVE), and for unary minus (OP_UNM). The best solution I could find was simply to reduce the cost of those two instructions to 1 cycle instead of 2, resulting in a slight speed increase in some cases.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;peeking or poking multiple values in 0.2.2c did not cost any additional cpu, so doing something like: poke4(0,peek4(0x1000,0x1000)) was completely free! The same line in 0.2.3 now costs the same as doing an equivalent memcpy.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h2&gt;Future Plans&lt;/h2&gt;
+&lt;p&gt;Next up for PICO-8 is a 64-bit Raspberry Pi Build, and also a preview of a web version that is also handy for running PICO-8 on Chromebooks. I'm also still working on online scores, which required developing some bespoke infrastructure that is optimised for PICO-8's usage patterns, and can handle traffic from exported carts without needing to start charging for PICONET subscriptions or anything like that. I'll test it next month with the release of &lt;a href=&quot;https://www.doodlemud.com&quot;&gt;https://www.doodlemud.com&lt;/a&gt;, which is a multiplayer drawing game designed to battletest PICO-8's backend before exposing it to precious cartridge data!&lt;/p&gt;
+&lt;h2&gt;Changelog&lt;/h2&gt;
+&lt;p&gt;&lt;div&gt;&lt;div&gt;&lt;input type=&quot;button&quot; value=&quot; Show &quot; onClick=&quot;if (this.parentNode.parentNode.getElementsByTagName('div')[1].getElementsByTagName('div')[0].style.display != '') { this.parentNode.parentNode.getElementsByTagName('div')[1].getElementsByTagName('div')[0].style.display = '';		this.innerText = ''; this.value = ' Hide '; } else { this.parentNode.parentNode.getElementsByTagName('div')[1].getElementsByTagName('div')[0].style.display = 'none'; this.innerText = ''; this.value = ' Show '; }&quot;&gt;&lt;/div&gt;&lt;div&gt;&lt;div style=&quot;display: none;&quot;&gt;&lt;br /&gt;
+v0.2.3&lt;/p&gt;
+&lt;p&gt;Added: Lucky draw list in splore -- gives a random selection of carts&lt;br /&gt;
+Added: load/save carts in .p8.rom format (raw binary 32k block)&lt;br /&gt;
+Added: tostr(), tonum() take format_flags parameter to convert to and from 32-bit signed ints&lt;br /&gt;
+Added: ord(str, pos, num) returns num results starting from character at pos (similar to peek)&lt;br /&gt;
+Added: FOLDER takes an optional parameter to open other host directories: BACKUPS | DESKTOP | CONFIG | BBS&lt;br /&gt;
+Added: Live character / token count of selected text shown at bottom right of code editor&lt;br /&gt;
+Changed: Removed collaboration list from splore (can still search for sub:collab)&lt;br /&gt;
+Changed: 0x808 audio has a slight lpf filter on it by default // turn off by setting bit 0x20 at 0x5f36&lt;br /&gt;
+Changed: tonum(boolean_value) returns 1 or 0 instead of nil&lt;br /&gt;
+Changed: cursor CR x position set only by print(str,x,y) or cursor(), but not by print(str) (0x5f24)&lt;br /&gt;
+Changed: character wrap is on by default when using print(str)&lt;br /&gt;
+Changed: force-pause-menu hold duration is 500ms instead of 300ms to prevent accidentally triggering it&lt;br /&gt;
+Changed: default gif length for new install is 16 seconds&lt;br /&gt;
+Changed: ? shorthand can be used anywhere on a line e.g.  if (true) ?&amp;quot;yes&amp;quot;&lt;br /&gt;
+Changed: allow while/if shorthand with no statement, using colon separator: WHILE(BTN()==0);&lt;br /&gt;
+Changed: added warning to fullscreen_method 2 in config.txt (gives erratic behaviour under some drivers)&lt;br /&gt;
+Changed: cheaper OP_MOVE, OP_UNM lua vm instructions so that e.g. &amp;quot;local a=0-b&amp;quot; is not faster than &amp;quot;local a=-b&amp;quot;&lt;br /&gt;
+Fixed: peek&lt;em&gt;() / poke&lt;/em&gt;() do not charge extra cpu when reading or writing multiple values&lt;br /&gt;
+Fixed: fget(n) returns junk when n is out of range (0..255); should return 0 in that case&lt;br /&gt;
+Fixed: dropped .PNG files not detected as images when filename uses uppercase extension&lt;br /&gt;
+Fixed: line()/tline() illegal writes caused by faulty clipping when (x1-x0) or (y1-y0) &amp;gt;= 0x8000&lt;br /&gt;
+Fixed: -accept_future 1 only worked with .p8.png files; now also applies to .p8&lt;br /&gt;
+Fixed: ?&amp;quot;\a7f&amp;quot; does not play f (happens only when f is the first note)&lt;br /&gt;
+Fixed: abs(0x8000) return 0x0.0001 (should be 0x7fff.ffff)&lt;br /&gt;
+Fixed: parameter string (stat(6)) is dropped when passed via RUN command&lt;br /&gt;
+Fixed: preprocessing of form: &amp;quot;x += x&amp;lt;0 and -1 or 1&amp;quot; broken for operators &amp;lt;, &amp;gt;&lt;br /&gt;
+Fixed: tab not accepted as whitespace for some preprocessor operations&lt;br /&gt;
+Fixed: stat(1) wraps around when cpu is &amp;gt;= 2.0 (regression in 0.2.2)&lt;br /&gt;
+Fixed: pressing SHIFT+ENTER on &amp;quot;local function foo()&amp;quot; or after &amp;quot;if (..) else&amp;quot; doesn't insert &amp;quot;end&amp;quot;&lt;br /&gt;
+Fixed: pal() does not reset secondary palette to system default&lt;br /&gt;
+Fixed: 0x808 audio does not respect pausing / volume / is not recorded with extcmd(&amp;quot;audio_rec&amp;quot;)&lt;br /&gt;
+Fixed: 'h' pressed in sprite editor toggles hex mode in map editor&lt;br /&gt;
+Fixed: After pressing shift-tab to toggle 128x128 map view, active draw area is still only 128x112&lt;br /&gt;
+Fixed: Attempt to navigate to non-existant tab after running: function _update60() _update60=nil end&lt;br /&gt;
+Fixed: stat(101) not returning cart id when running from BBS web player&lt;br /&gt;
+Fixed: print() wrapping + scrolling; e.g. from commandline: while(true) print(chr(254+rnd(2))..&amp;quot;\0&amp;quot;)&lt;br /&gt;
+Fixed: integer divide assignment operator (\=) costs 2 tokens instead of 1 &lt;/p&gt;
+&lt;p&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;/p&gt;
+	</description>
+            <link>https://www.lexaloffle.com/bbs/?tid=44512</link>
+            <guid isPermaLink="true">https://www.lexaloffle.com/bbs/?tid=44512</guid>
+	<pubDate>Mon, 06 Sep 2021 21:26:11 UTC</pubDate>
+    </item>
+
+</channel>
+</rss>
