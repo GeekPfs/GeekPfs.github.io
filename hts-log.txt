@@ -1,0 +1,29 @@
+HTTrack3.49-2+htsswf+htsjava launched on Tue, 01 Oct 2024 00:41:13 at https://www.lexaloffle.com/bbs/widget.php?pid=balloon +*.png +*.gif +*.jpg +*.jpeg +*.css +*.js -ad.doubleclick.net/* -mime:application/foobar
+(winhttrack -WC2%Ps2u1%s%uN0%I0p3DaK0H0%kf2A25000%f#f -F "Mozilla/4.5 (compatible; HTTrack 3.0x; Windows 98)" -%F "<!-- Mirrored from %s%s by HTTrack Website Copier/3.x [XR&CO'2014], %s -->" -%l "pt_BR, en, *" https://www.lexaloffle.com/bbs/widget.php?pid=balloon -O1 "C:\Meus Sites\ballon" +*.png +*.gif +*.jpg +*.jpeg +*.css +*.js -ad.doubleclick.net/* -mime:application/foobar )
+
+Information, Warnings and Errors reported for this mirror:
+note:	the hts-log.txt file, and hts-cache folder, may contain sensitive information,
+	such as username/password authentication for websites mirrored in this project
+	do not share these files/folders if you want these information to remain private
+
+00:41:22	Error: 	"Not Found" (404) at link https://www.lexaloffle.com/bbs/POST (from https://www.lexaloffle.com/bbs/widget.php?pid=balloon)
+00:41:22	Error: 	"Not Found" (404) at link https://www.lexaloffle.com/bbs/GET (from https://www.lexaloffle.com/bbs/widget.php?pid=balloon)
+00:41:22	Error: 	"Not Found" (404) at link https://www.lexaloffle.com/bbs/img/login_button.png (from https://www.lexaloffle.com/bbs/widget.php?pid=balloon)
+00:41:22	Error: 	"Not Found" (404) at link https://www.lexaloffle.com/bbs/img/signup_button.png (from https://www.lexaloffle.com/bbs/widget.php?pid=balloon)
+00:41:22	Error: 	"Not Found" (404) at link https://www.lexaloffle.com/bbs/dropped.p8.png (from https://www.lexaloffle.com/bbs/widget.php?pid=balloon)
+00:41:22	Error: 	"Not Found" (404) at link https://www.lexaloffle.com/bbs/untitled.p8.png (from https://www.lexaloffle.com/bbs/widget.php?pid=balloon)
+00:56:07	Error: 	"Not Found" (404) at link https://www.lexaloffle.com/bbs/p8b_vox.png (from https://www.lexaloffle.com/bbs/?pid=balloon)
+00:56:07	Error: 	"Not Found" (404) at link https://www.lexaloffle.com/bbs/p8b_pico8.png (from https://www.lexaloffle.com/bbs/?pid=balloon)
+00:56:07	Error: 	"Not Found" (404) at link https://www.lexaloffle.com/bbs/p8b_picotron.png (from https://www.lexaloffle.com/bbs/?pid=balloon)
+00:56:14	Error: 	"Not Found" (404) at link https://www.lexaloffle.com/gfx/view_posts0.png (from https://www.lexaloffle.com/bbs/?uid=55954)
+01:01:20	Error: 	Exit requested by shell or user
+01:01:24	Error: 	Exit requested by shell or user
+01:01:24	Error: 	"" (-1) at link https://www.lexaloffle.com/bbs/?tid=47392 (from https://www.lexaloffle.com/bbs/?cat=7)
+01:01:24	Error: 	Exit requested by shell or user
+
+HTTrack Website Copier/3.49-2 mirror complete in 20 minutes 11 seconds : 2909 links scanned, 2870 files written (368515838 bytes overall) [165915410 bytes received at 137006 bytes/sec], 263335959 bytes transferred using HTTP compression in 2042 files, ratio 22%, 111.1 requests per connection
+(14 errors, 0 warnings, 0 messages)
+* * MIRROR ABORTED! * *
+The current temporary cache is required for any update operation and only contains data downloaded during the present aborted session.
+The former cache might contain more complete information; if you do not want to lose that information, you have to restore it and delete the current cache.
+This can easily be done here by erasing the hts-cache/new.* files]

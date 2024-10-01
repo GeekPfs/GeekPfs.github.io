@@ -1,0 +1,4 @@
+# HTTrack Website Copier Cookie File
+# This file format is compatible with Netscape cookies
+www.lexaloffle.com	TRUE	/	FALSE	1999999999	PHPSESSID	0ac60683b9596dec1ac26a2b0e3c926e
+
